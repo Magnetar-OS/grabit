@@ -62,5 +62,5 @@ jobs:
       tag: ${{ inputs.tag || '' }}
       product_name: 'grabit'
       repo_name: 'magnetar'
-      pages_repo: 'entro314-labs/arch-repo'
+      pages_repo: 'Magnetar-OS/arch-repo'
     secrets: inherit
