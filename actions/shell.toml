@@ -1,0 +1,10 @@
+id = "shell"
+title = "Run as shell command"
+icon = "utilities-terminal-symbolic"
+label = "Run"
+order = 90
+# Disabled by default: this hands the selected text to a shell. Enable it only
+# if you are comfortable with one mis-click executing whatever you highlighted.
+enabled = false
+exec = ["sh", "-c", "{{text}}"]
+after = "copy"

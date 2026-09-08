@@ -1,0 +1,8 @@
+id = "copy"
+title = "Copy"
+icon = "edit-copy-symbolic"
+label = "Copy"
+order = 10
+# No `url` and no `exec`: the selection itself is the result, and `after`
+# decides what happens to it.
+after = "copy"

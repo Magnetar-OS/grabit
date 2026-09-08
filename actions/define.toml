@@ -1,0 +1,8 @@
+id = "define"
+title = "Define"
+icon = "accessories-dictionary-symbolic"
+label = "Define"
+order = 25
+# A single word only: definitions of whole sentences help nobody.
+match = '^\s*\p{L}+\s*$'
+url = "https://en.wiktionary.org/wiki/{{text_trimmed}}"

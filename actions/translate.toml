@@ -1,0 +1,6 @@
+id = "translate"
+title = "Translate"
+icon = "accessories-dictionary-symbolic"
+label = "Translate"
+order = 30
+url = "https://translate.google.com/?sl=auto&tl=en&op=translate&text={{text}}"

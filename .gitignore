@@ -1,0 +1,5 @@
+/target
+
+# Editor and scratch files
+*.swp
+.release-kit/

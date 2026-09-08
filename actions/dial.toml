@@ -1,0 +1,9 @@
+id = "dial"
+title = "Call"
+icon = "call-start-symbolic"
+label = "Call"
+order = 8
+# `{{phone}}` is the detected number compacted for a tel: URI — digits and a
+# leading + only, however the selection was formatted.
+detects = ["phone"]
+url = "tel:{{phone}}"

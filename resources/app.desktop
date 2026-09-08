@@ -1,0 +1,14 @@
+[Desktop Entry]
+# Name, Comment and Keywords are replaced at build time with the localized
+# values from i18n/, one line per language.
+Name=grabit
+Comment=Selection-triggered actions for Wayland desktops
+Keywords=selection;clipboard;actions;popup;text;
+Type=Application
+Exec=grabit run
+Terminal=false
+Categories=Utility;
+# A daemon with no window of its own: this entry exists to autostart it, not to
+# put anything in a menu.
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

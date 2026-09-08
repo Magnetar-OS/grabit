@@ -1,0 +1,25 @@
+.grabit-bar {
+    background-color: rgba(40, 40, 40, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    spacing: 2px;
+}
+
+.grabit-button {
+    border-radius: 8px;
+    padding: 4px 8px;
+    color: #ffffff;
+    min-width: 22px;
+}
+
+.grabit-button:hover { background-color: rgba(255, 255, 255, 0.12); }
+.grabit-button:active { background-color: rgba(255, 255, 255, 0.20); }
+
+.grabit-pager { min-width: 14px; padding: 4px 4px; }
+
+.grabit-result { padding: 10px; spacing: 6px; max-width: 420px; }
+.grabit-result-header { spacing: 6px; }
+.grabit-result-title { font-weight: bold; color: #ffffff; }
+.grabit-result-body { color: rgba(255, 255, 255, 0.9); }

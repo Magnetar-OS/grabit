@@ -1,0 +1,9 @@
+id = "open-path"
+title = "Open in file manager"
+icon = "folder-open-symbolic"
+label = "Open"
+order = 7
+# `detects` uses grabit's classification pass: offered only when the selection
+# is a single absolute or ~/ path. `{{path}}` is the detected value.
+detects = ["path"]
+exec = ["xdg-open", "{{path}}"]

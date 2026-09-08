@@ -1,0 +1,17 @@
+[Unit]
+Description=grabit — selection-triggered actions
+Documentation=https://github.com/idominikos/grabit
+# Wayland-only: without a display there is nothing to watch and nowhere to draw.
+ConditionEnvironment=WAYLAND_DISPLAY
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/grabit run
+ExecReload=/usr/bin/grabit reload
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

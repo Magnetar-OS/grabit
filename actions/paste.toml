@@ -1,0 +1,8 @@
+id = "paste"
+title = "Paste"
+icon = "edit-paste-symbolic"
+label = "Paste"
+order = 12
+# Paste the current clipboard over the selection. Needs key injection; where
+# the session has none, grabit does not offer this action at all.
+builtin = "paste"

@@ -1,0 +1,21 @@
+# grabit configuration.
+# Actions live in ./actions/*.toml — one file per action, drop-in installable.
+
+[popup]
+# Drag-selecting updates the primary selection continuously, so wait for it to
+# stop changing before showing the bar.
+settle_ms = 140
+max_actions = 8
+icon_size = 16
+# Bar position relative to the pointer, in logical pixels.
+offset_x = 12
+offset_y = 18
+# Hide this long after the pointer leaves the bar. 0 disables.
+dismiss_ms = 900
+# Hide unconditionally after this long. 0 disables.
+timeout_ms = 8000
+
+[selection]
+min_length = 1
+max_length = 20000
+ignore_whitespace_only = true

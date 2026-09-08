@@ -1,0 +1,10 @@
+id = "search"
+title = "Search the web"
+icon = "system-search-symbolic"
+label = "Search"
+order = 20
+# In a `url` template `{{text}}` is percent-encoded; use `{{text_raw}}` if you
+# genuinely need it verbatim.
+url = "https://duckduckgo.com/?q={{text}}"
+# Anything that already looks like a bare URL is handled by `open-link`.
+not_match = '^\s*(https?://|www\.)\S+\s*$'

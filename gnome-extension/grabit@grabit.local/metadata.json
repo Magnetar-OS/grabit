@@ -1,0 +1,8 @@
+{
+  "uuid": "grabit@grabit.local",
+  "name": "grabit",
+  "description": "Companion for the grabit daemon. Mutter exposes neither selection monitoring nor surface placement to clients, so on GNOME the shell itself watches the primary selection, draws the action bar and synthesises the paste keystroke. The daemon decides which actions exist and runs them.",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "url": "https://github.com/idominikos/grabit",
+  "session-modes": ["user"]
+}

@@ -1,0 +1,8 @@
+id = "lower"
+title = "lowercase"
+icon = "format-text-lowercase-symbolic"
+label = "aa"
+order = 41
+exec = ["tr", "[:upper:]", "[:lower:]"]
+stdin = true
+after = "replace"

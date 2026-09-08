@@ -1,0 +1,10 @@
+id = "open-link"
+title = "Open link"
+icon = "web-browser-symbolic"
+label = "Open"
+order = 5
+# `detects` uses grabit's classification pass, which also normalises the value:
+# `www.` selections gain https://, trailing sentence punctuation is dropped.
+# `{{url}}` is that normalised URL.
+detects = ["url"]
+url = "{{url}}"

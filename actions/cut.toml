@@ -1,0 +1,8 @@
+id = "cut"
+title = "Cut"
+icon = "edit-cut-symbolic"
+label = "Cut"
+order = 11
+# Copy the selection, then delete it from the source. Needs key injection;
+# where the session has none, grabit does not offer this action at all.
+builtin = "cut"

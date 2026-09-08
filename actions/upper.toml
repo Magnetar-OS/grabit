@@ -1,0 +1,10 @@
+id = "upper"
+title = "UPPERCASE"
+icon = "format-text-uppercase-symbolic"
+label = "AA"
+order = 40
+exec = ["tr", "[:lower:]", "[:upper:]"]
+# Pipe the selection in rather than expanding it into the argv, so arbitrarily
+# long selections work.
+stdin = true
+after = "replace"

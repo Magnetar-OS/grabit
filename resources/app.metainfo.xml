@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.idominikos.Grabit</id>
+  <name>grabit</name>
+  <summary>Selection-triggered actions for Wayland desktops</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MPL-2.0</project_license>
+  <url type="homepage">https://github.com/idominikos/grabit</url>
+  <url type="bugtracker">https://github.com/idominikos/grabit/issues</url>
+  <url type="vcs-browser">https://github.com/idominikos/grabit</url>
+  <launchable type="desktop-id">io.github.idominikos.Grabit.desktop</launchable>
+  <provides>
+    <binaries>
+      <binary>grabit</binary>
+    </binaries>
+  </provides>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>selection</keyword>
+    <keyword>clipboard</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+  <description>
+    <p>
+      Select text anywhere and a small bar of actions appears over it — copy,
+      search, translate, open, transform, run. Actions are one TOML file each,
+      so they can be dropped in, edited or deleted.
+    </p>
+    <p>
+      Wayland only. On cosmic-comp, KWin and wlroots compositors grabit watches
+      the selection and draws the bar itself; on GNOME a companion shell
+      extension does both, because Mutter exposes neither capability to clients.
+    </p>
+  </description>
+</component>

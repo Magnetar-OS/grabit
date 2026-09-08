@@ -1,0 +1,9 @@
+id = "mail"
+title = "Compose mail"
+icon = "mail-send-symbolic"
+label = "Mail"
+order = 6
+# `{{email}}` is the detected address, stripped of any mailto: prefix and
+# trailing punctuation.
+detects = ["email"]
+url = "mailto:{{email}}"
