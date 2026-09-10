@@ -1,0 +1,6 @@
+# grabit is written with wide single-line calls, chains and if-else expressions
+# — the default "small heuristics" would break 110 of them into vertical form.
+# COSMIC repositories carry a rustfmt.toml for the same reason; theirs also sets
+# imports_granularity = "Module", which is nightly-only and so left out here,
+# since CI runs `cargo fmt --check` on stable.
+use_small_heuristics = "Max"

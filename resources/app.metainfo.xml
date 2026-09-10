@@ -5,9 +5,9 @@
   <summary>Selection-triggered actions for Wayland desktops</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MPL-2.0</project_license>
-  <url type="homepage">https://github.com/idominikos/grabit</url>
-  <url type="bugtracker">https://github.com/idominikos/grabit/issues</url>
-  <url type="vcs-browser">https://github.com/idominikos/grabit</url>
+  <url type="homepage">https://github.com/Magnetar-OS/grabit</url>
+  <url type="bugtracker">https://github.com/Magnetar-OS/grabit/issues</url>
+  <url type="vcs-browser">https://github.com/Magnetar-OS/grabit</url>
   <launchable type="desktop-id">io.github.idominikos.Grabit.desktop</launchable>
   <provides>
     <binaries>
@@ -26,6 +26,20 @@
     <keyword>clipboard</keyword>
   </keywords>
   <content_rating type="oars-1.1" />
+  <!-- Software centres show this as the "What's New" text. The marker comment
+       lets release-kit rewrite the version and the date together, so it cannot
+       drift from Cargo.toml: this file is listed in release.config.json's
+       "versionFiles". -->
+  <releases>
+    <release version="0.1.0" date="2026-09-10"> <!-- x-release-kit-version-date -->
+      <description>
+        <ul>
+          <li>First release</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
   <description>
     <p>
       Select text anywhere and a small bar of actions appears over it — copy,

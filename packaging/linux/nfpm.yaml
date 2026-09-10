@@ -16,9 +16,8 @@ section: utils
 priority: optional
 maintainer: Dominikos Pritis <dominikos.pritis@gmail.com>
 vendor: entro314-labs
-homepage: https://github.com/entro314-labs/grabit
-# TODO: no LICENSE file or license field exists in this repo yet —
-# settle the license, then declare it here and in the AUR job.
+homepage: https://github.com/Magnetar-OS/grabit
+license: MPL-2.0
 description: |
   Selection-triggered actions for Wayland desktops
 

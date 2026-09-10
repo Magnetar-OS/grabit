@@ -2,6 +2,16 @@
 name = "grabit"
 version = "0.1.0"
 edition = "2024"
+description = "Selection-triggered actions for Wayland desktops"
+repository = "https://github.com/Magnetar-OS/grabit"
+homepage = "https://github.com/Magnetar-OS/grabit"
+license = "MPL-2.0"
+readme = "README.md"
+keywords = ["wayland", "selection", "clipboard", "cosmic", "layer-shell"]
+categories = ["gui", "os::linux-apis"]
+# libcosmic is only distributed from git, and crates.io refuses a dependency
+# without a version requirement. grabit ships as a distro package, not a crate.
+publish = false
 
 [dependencies]
 libcosmic = { git = "https://github.com/pop-os/libcosmic.git", features = [
