@@ -287,9 +287,7 @@ pub fn load() -> Result<Loaded> {
     }
 
     let mut actions: Vec<Action> = by_id.into_values().collect();
-    actions.sort_by(|a, b| {
-        a.spec.order.cmp(&b.spec.order).then_with(|| a.spec.id.cmp(&b.spec.id))
-    });
+    actions.sort_by(|a, b| a.spec.order.cmp(&b.spec.order).then_with(|| a.spec.id.cmp(&b.spec.id)));
 
     Ok(Loaded { config, actions })
 }
@@ -298,8 +296,8 @@ fn load_config(path: &Path) -> Result<Config> {
     if !path.exists() {
         return Ok(Config::default());
     }
-    let raw = std::fs::read_to_string(path)
-        .with_context(|| format!("reading {}", path.display()))?;
+    let raw =
+        std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))
 }
 

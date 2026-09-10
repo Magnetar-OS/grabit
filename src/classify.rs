@@ -61,18 +61,14 @@ impl Classification {
     }
 }
 
-static URL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(?:https?|ftp)://\S+$").expect("static regex")
-});
-static WWW: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^www\.[\w-]+(?:\.[\w-]+)+(?:[/?#]\S*)?$").expect("static regex")
-});
-static EMAIL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$").expect("static regex")
-});
-static PHONE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^\+?[0-9(][0-9 ().\-/]{4,24}[0-9]$").expect("static regex")
-});
+static URL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(?:https?|ftp)://\S+$").expect("static regex"));
+static WWW: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^www\.[\w-]+(?:\.[\w-]+)+(?:[/?#]\S*)?$").expect("static regex"));
+static EMAIL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$").expect("static regex"));
+static PHONE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\+?[0-9(][0-9 ().\-/]{4,24}[0-9]$").expect("static regex"));
 static COLOR: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)^(?:#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})|rgba?\([0-9., %]+\)|hsla?\([0-9., %deg]+\))$",
@@ -133,7 +129,9 @@ fn trim_trailing_punctuation(text: &str) -> &str {
     loop {
         let Some(last) = out.chars().last() else { return out };
         let trimmed = match last {
-            '.' | ',' | ';' | ':' | '!' | '?' | '"' | '\'' | '…' => &out[..out.len() - last.len_utf8()],
+            '.' | ',' | ';' | ':' | '!' | '?' | '"' | '\'' | '…' => {
+                &out[..out.len() - last.len_utf8()]
+            }
             ')' if unbalanced(out, '(', ')') => &out[..out.len() - 1],
             ']' if unbalanced(out, '[', ']') => &out[..out.len() - 1],
             '}' if unbalanced(out, '{', '}') => &out[..out.len() - 1],
@@ -206,7 +204,10 @@ mod tests {
             classify("https://en.wikipedia.org/wiki/Rust_(film)").url.as_deref(),
             Some("https://en.wikipedia.org/wiki/Rust_(film)")
         );
-        assert_eq!(classify("https://example.com/a)").url.as_deref(), Some("https://example.com/a"));
+        assert_eq!(
+            classify("https://example.com/a)").url.as_deref(),
+            Some("https://example.com/a")
+        );
     }
 
     #[test]

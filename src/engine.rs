@@ -188,8 +188,7 @@ impl Engine {
 
     fn inject(&self, keystroke: impl FnOnce(&mut Box<dyn Injector>) -> Result<()>) -> Result<()> {
         let mut guard = self.0.injector.lock().expect("injector lock poisoned");
-        let injector =
-            guard.as_mut().context("this session cannot synthesise keystrokes")?;
+        let injector = guard.as_mut().context("this session cannot synthesise keystrokes")?;
         keystroke(injector)
     }
 
@@ -288,8 +287,7 @@ fn disable_in_manifest(manifest: &str) -> String {
 }
 
 fn spawn_worker(id: &str, work: impl FnOnce() + Send + 'static) {
-    let spawned =
-        std::thread::Builder::new().name(format!("grabit-action-{id}")).spawn(work);
+    let spawned = std::thread::Builder::new().name(format!("grabit-action-{id}")).spawn(work);
     if let Err(e) = spawned {
         log::error!("could not spawn worker for action `{id}`: {e}");
     }

@@ -113,8 +113,7 @@ pub fn run(
             };
             // An excluded app's selection must also take an existing bar down,
             // so it is reported as cleared rather than swallowed.
-            let excluded =
-                !app.is_empty() && exclusions.config().applications.is_excluded(&app);
+            let excluded = !app.is_empty() && exclusions.config().applications.is_excluded(&app);
             let event = if text.is_empty() || excluded {
                 Raw::Cleared
             } else {

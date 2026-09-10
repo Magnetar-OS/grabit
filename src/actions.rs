@@ -198,12 +198,7 @@ fn exec(action: &Action, argv: &[String], ctx: &Expansion<'_>) -> Result<String>
     let out = child.wait_with_output().context("collecting action output")?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
-        anyhow::bail!(
-            "action `{}` exited with {}: {}",
-            action.spec.id,
-            out.status,
-            stderr.trim()
-        );
+        anyhow::bail!("action `{}` exited with {}: {}", action.spec.id, out.status, stderr.trim());
     }
     String::from_utf8(out.stdout)
         .with_context(|| format!("action `{}` produced non-UTF-8 output", action.spec.id))

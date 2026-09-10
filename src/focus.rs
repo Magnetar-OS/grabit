@@ -19,8 +19,7 @@ use wayland_client::backend::ObjectId;
 use wayland_client::protocol::wl_registry;
 use wayland_client::{Connection, Dispatch, Proxy, QueueHandle, event_created_child};
 use wayland_protocols_wlr::foreign_toplevel::v1::client::{
-    zwlr_foreign_toplevel_handle_v1 as handle_v1,
-    zwlr_foreign_toplevel_manager_v1 as manager_v1,
+    zwlr_foreign_toplevel_handle_v1 as handle_v1, zwlr_foreign_toplevel_manager_v1 as manager_v1,
 };
 
 /// A live view of the focused application's app id.
@@ -42,11 +41,8 @@ pub fn spawn() -> Result<Handle> {
     conn.display().get_registry(&qh, ());
 
     let current = Arc::new(RwLock::new(None));
-    let mut state = State {
-        current: Arc::clone(&current),
-        manager: None,
-        toplevels: HashMap::new(),
-    };
+    let mut state =
+        State { current: Arc::clone(&current), manager: None, toplevels: HashMap::new() };
     queue.roundtrip(&mut state).context("listing Wayland globals")?;
     anyhow::ensure!(
         state.manager.is_some(),
@@ -55,10 +51,12 @@ pub fn spawn() -> Result<Handle> {
 
     std::thread::Builder::new()
         .name("grabit-focus".into())
-        .spawn(move || loop {
-            if let Err(e) = queue.blocking_dispatch(&mut state) {
-                log::warn!("focus tracking stopped: {e}");
-                return;
+        .spawn(move || {
+            loop {
+                if let Err(e) = queue.blocking_dispatch(&mut state) {
+                    log::warn!("focus tracking stopped: {e}");
+                    return;
+                }
             }
         })
         .context("spawning the focus tracker")?;

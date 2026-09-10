@@ -31,11 +31,7 @@ use crate::engine::Engine;
 use crate::inject::{Injector, VirtualKeyboard};
 
 #[derive(Parser)]
-#[command(
-    name = "grabit",
-    version,
-    about = "Selection-triggered actions for Wayland desktops"
-)]
+#[command(name = "grabit", version, about = "Selection-triggered actions for Wayland desktops")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Cmd>,
@@ -62,10 +58,8 @@ enum Cmd {
 }
 
 fn main() -> Result<()> {
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("grabit=info"),
-    )
-    .init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("grabit=info"))
+        .init();
 
     i18n::init();
 
@@ -155,9 +149,8 @@ fn open_injector(supported: bool) -> Option<Box<dyn Injector>> {
 fn explain_unsupported(capabilities: &detect::Capabilities) -> String {
     let mut missing = Vec::new();
     if !capabilities.data_control {
-        missing.push(
-            "ext-data-control-v1 or wlr-data-control-v1 v2 (needed to watch the selection)",
-        );
+        missing
+            .push("ext-data-control-v1 or wlr-data-control-v1 v2 (needed to watch the selection)");
     }
     if !capabilities.layer_shell {
         missing.push("zwlr_layer_shell_v1 (needed to place the popup)");

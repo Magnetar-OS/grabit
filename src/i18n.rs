@@ -29,7 +29,8 @@ pub static LANGUAGE_LOADER: LazyLock<FluentLanguageLoader> = LazyLock::new(|| {
 
 /// Select translations for the languages the desktop asked for.
 pub fn init() {
-    let requested: Vec<LanguageIdentifier> = i18n_embed::DesktopLanguageRequester::requested_languages();
+    let requested: Vec<LanguageIdentifier> =
+        i18n_embed::DesktopLanguageRequester::requested_languages();
     let localizer = DefaultLocalizer::new(&*LANGUAGE_LOADER, &Localizations);
     if let Err(e) = localizer.select(&requested) {
         // Not fatal: the fallback language is compiled in, so the program is

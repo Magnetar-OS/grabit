@@ -385,18 +385,10 @@ impl Grabit {
         }
 
         if pages > 1 {
-            row = row.push(self.pager_button(
-                "go-next-symbolic",
-                "›",
-                self.page + 1 < pages,
-                1,
-            ));
+            row = row.push(self.pager_button("go-next-symbolic", "›", self.page + 1 < pages, 1));
         }
 
-        widget::container(row)
-            .class(theme::Container::Dropdown)
-            .padding(pad_bar)
-            .into()
+        widget::container(row).class(theme::Container::Dropdown).padding(pad_bar).into()
     }
 
     fn pager_button(
@@ -434,22 +426,18 @@ impl Grabit {
             .push(widget::text::caption_heading(title.to_owned()))
             .push(widget::space::horizontal().width(Length::Fill))
             .push(widget::tooltip(
-                widget::button::custom(
-                    widget::icon::from_name("edit-copy-symbolic").size(14),
-                )
-                .class(theme::Button::Icon)
-                .padding(cosmic.space_xxxs())
-                .on_press(Message::CopyResult),
+                widget::button::custom(widget::icon::from_name("edit-copy-symbolic").size(14))
+                    .class(theme::Button::Icon)
+                    .padding(cosmic.space_xxxs())
+                    .on_press(Message::CopyResult),
                 widget::text::body(crate::fl!("result-copy")),
                 widget::tooltip::Position::Bottom,
             ))
             .push(widget::tooltip(
-                widget::button::custom(
-                    widget::icon::from_name("window-close-symbolic").size(14),
-                )
-                .class(theme::Button::Icon)
-                .padding(cosmic.space_xxxs())
-                .on_press(Message::Key(Nav::Dismiss)),
+                widget::button::custom(widget::icon::from_name("window-close-symbolic").size(14))
+                    .class(theme::Button::Icon)
+                    .padding(cosmic.space_xxxs())
+                    .on_press(Message::Key(Nav::Dismiss)),
                 widget::text::body(crate::fl!("result-close")),
                 widget::tooltip::Position::Bottom,
             ));
@@ -638,14 +626,10 @@ impl cosmic::Application for Grabit {
                 }
                 self.anim = step.min(ANIM_STEPS);
                 let margin = self.current_margin();
-                let apply =
-                    set_margin_of(self.bar.expect("checked above"), margin);
+                let apply = set_margin_of(self.bar.expect("checked above"), margin);
                 if step < ANIM_STEPS {
                     let next = step + 1;
-                    Task::batch([
-                        apply,
-                        timer(ANIM_FRAME, move || Message::Anim(epoch, next)),
-                    ])
+                    Task::batch([apply, timer(ANIM_FRAME, move || Message::Anim(epoch, next))])
                 } else {
                     apply
                 }
@@ -734,9 +718,7 @@ impl cosmic::Application for Grabit {
             }
 
             Message::Control(Command::Show) => match crate::control::current_primary_selection() {
-                Ok(text)
-                    if selection::is_interesting(&text, &self.engine.config().selection) =>
-                {
+                Ok(text) if selection::is_interesting(&text, &self.engine.config().selection) => {
                     self.begin(Grab::text(text), true)
                 }
                 Ok(_) => {
@@ -788,36 +770,27 @@ impl cosmic::Application for Grabit {
             settle: Duration::from_millis(config.popup.settle_ms),
         };
 
-        let selections = Subscription::run_with(
-            Feed { name: "grabit-selections", ..feed.clone() },
-            |feed| {
-                selection::settled(
-                    feed.selections.clone(),
-                    feed.config.clone(),
-                    feed.settle,
-                )
-                .map(Message::Selection)
-                .boxed()
-            },
-        );
+        let selections =
+            Subscription::run_with(Feed { name: "grabit-selections", ..feed.clone() }, |feed| {
+                selection::settled(feed.selections.clone(), feed.config.clone(), feed.settle)
+                    .map(Message::Selection)
+                    .boxed()
+            });
 
-        let commands = Subscription::run_with(
-            Feed { name: "grabit-commands", ..feed.clone() },
-            |feed| feed.commands.clone().map(Message::Control).boxed(),
-        );
+        let commands =
+            Subscription::run_with(Feed { name: "grabit-commands", ..feed.clone() }, |feed| {
+                feed.commands.clone().map(Message::Control).boxed()
+            });
 
-        let feedback = Subscription::run_with(
-            Feed { name: "grabit-feedback", ..feed },
-            |feed| feed.feedback.clone().map(Message::EngineFeedback).boxed(),
-        );
+        let feedback = Subscription::run_with(Feed { name: "grabit-feedback", ..feed }, |feed| {
+            feed.feedback.clone().map(Message::EngineFeedback).boxed()
+        });
 
         let events = listen_raw(|event, _status, id| match event {
             iced::Event::Mouse(iced::mouse::Event::CursorMoved { position }) => {
                 Some(Message::Pointer(id, position))
             }
-            iced::Event::Mouse(iced::mouse::Event::CursorEntered) => {
-                Some(Message::Hover(id, true))
-            }
+            iced::Event::Mouse(iced::mouse::Event::CursorEntered) => Some(Message::Hover(id, true)),
             iced::Event::Mouse(iced::mouse::Event::CursorLeft) => Some(Message::Hover(id, false)),
             iced::Event::Window(iced::window::Event::Opened { size, .. }) => {
                 Some(Message::Opened(id, size))
@@ -835,12 +808,8 @@ impl cosmic::Application for Grabit {
                     iced::keyboard::Key::Named(Named::ArrowLeft | Named::ArrowUp) => {
                         Some(Message::Key(Nav::Prev))
                     }
-                    iced::keyboard::Key::Named(Named::Enter) => {
-                        Some(Message::Key(Nav::Activate))
-                    }
-                    iced::keyboard::Key::Named(Named::Escape) => {
-                        Some(Message::Key(Nav::Dismiss))
-                    }
+                    iced::keyboard::Key::Named(Named::Enter) => Some(Message::Key(Nav::Activate)),
+                    iced::keyboard::Key::Named(Named::Escape) => Some(Message::Key(Nav::Dismiss)),
                     iced::keyboard::Key::Named(Named::Tab) => Some(Message::Key(Nav::Next)),
                     _ => None,
                 }

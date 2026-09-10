@@ -102,11 +102,27 @@ impl App {
             ))
             .add(settings::item(
                 crate::fl!("settings-dismiss"),
-                widget::spin_button("", "", popup.dismiss_ms as u32, 100, 0, 10_000, Message::DismissMs),
+                widget::spin_button(
+                    "",
+                    "",
+                    popup.dismiss_ms as u32,
+                    100,
+                    0,
+                    10_000,
+                    Message::DismissMs,
+                ),
             ))
             .add(settings::item(
                 crate::fl!("settings-timeout"),
-                widget::spin_button("", "", popup.timeout_ms as u32, 500, 0, 60_000, Message::TimeoutMs),
+                widget::spin_button(
+                    "",
+                    "",
+                    popup.timeout_ms as u32,
+                    500,
+                    0,
+                    60_000,
+                    Message::TimeoutMs,
+                ),
             ))
             .add(settings::item(
                 crate::fl!("settings-animate"),
@@ -121,7 +137,15 @@ impl App {
             .title(crate::fl!("settings-selection"))
             .add(settings::item(
                 crate::fl!("settings-min-length"),
-                widget::spin_button("", "", selection.min_length as u32, 1, 1, 1000, Message::MinLength),
+                widget::spin_button(
+                    "",
+                    "",
+                    selection.min_length as u32,
+                    1,
+                    1,
+                    1000,
+                    Message::MinLength,
+                ),
             ))
             .add(settings::item(
                 crate::fl!("settings-max-length"),
@@ -200,11 +224,7 @@ impl App {
                 if let Some(message) = message {
                     button = button.on_press(message);
                 }
-                widget::tooltip(
-                    button,
-                    widget::text::body(tooltip),
-                    widget::tooltip::Position::Top,
-                )
+                widget::tooltip(button, widget::text::body(tooltip), widget::tooltip::Position::Top)
             };
 
             let title = widget::column::with_capacity(2)
