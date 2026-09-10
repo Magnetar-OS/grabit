@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Tracking which application is focused, for the per-app rules.
 //!
 //! Wayland tells an ordinary client nothing about other clients' windows; the

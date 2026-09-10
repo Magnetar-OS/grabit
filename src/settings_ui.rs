@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! The settings window (`grabit settings`).
 //!
 //! TOML-first is the design: everything this window changes is written into

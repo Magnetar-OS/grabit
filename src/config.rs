@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Configuration and action-manifest loading.
 //!
 //! Configuration lives in two places, merged with user files winning on `id`

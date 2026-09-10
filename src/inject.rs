@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Synthesising the paste keystroke.
 //!
 //! "Replace the selection" is implemented as *put the new text on the clipboard,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Classifying a selection before actions are matched against it.
 //!
 //! PopClip's built-in intelligence is that the bar already knows *what* was

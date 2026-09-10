@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Generates the desktop entry and the AppStream metainfo.
 //!
 //! Both carry the application's name, comment and keywords, and all three of

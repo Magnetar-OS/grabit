@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! The GNOME front-end.
 //!
 //! Mutter implements neither data-control nor layer-shell, and will not: there

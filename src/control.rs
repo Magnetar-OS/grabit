@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! The D-Bus control surface.
 //!
 //! Everything a user can trigger from outside — a compositor keybinding, a

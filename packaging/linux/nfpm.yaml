@@ -17,7 +17,7 @@ priority: optional
 maintainer: Dominikos Pritis <dominikos.pritis@gmail.com>
 vendor: entro314-labs
 homepage: https://github.com/Magnetar-OS/grabit
-license: MPL-2.0
+license: GPL-3.0-only
 description: |
   Selection-triggered actions for Wayland desktops
 

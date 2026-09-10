@@ -243,3 +243,7 @@ what the compositor is actually being told:
 WAYLAND_DEBUG=1 RUST_LOG=grabit=debug cargo run 2>&1 \
   | grep -E 'get_layer_surface|set_input_region|wl_pointer'
 ```
+
+## License
+
+GPL-3.0-only. See [LICENSE](LICENSE).

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! The desktop-independent half of grabit: which actions apply to a selection,
 //! and what happens when one is invoked.
 //!

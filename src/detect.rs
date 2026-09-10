@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! One-shot probe of what the running compositor can actually do.
 //!
 //! grabit needs three separate capabilities and no compositor is guaranteed to

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Primary-selection monitoring via `ext-data-control-v1` / `wlr-data-control-v1`.
 //!
 //! These are the only Wayland protocols that let an unfocused client observe

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! The layer-shell front-end, used on cosmic-comp, KWin and wlroots.
 //!
 //! # Three surfaces

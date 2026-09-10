@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Writing to the Wayland clipboard.
 //!
 //! Wayland has no clipboard daemon: whoever owns a selection must stay alive to

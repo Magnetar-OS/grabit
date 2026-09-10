@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Selection sources and the debounce that turns them into a single event.
 
 pub mod data_control;

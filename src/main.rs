@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! grabit — selection-triggered actions for Wayland desktops.
 //!
 //! Highlight text anywhere, get a small bar of actions over it. The daemon is

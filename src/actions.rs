@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Template expansion and action execution.
 
 use std::io::Write;

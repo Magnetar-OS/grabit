@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
 //! Localization support.
 //!
 //! grabit has very little translatable chrome, and that is deliberate: every
