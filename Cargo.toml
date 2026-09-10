@@ -1,6 +1,6 @@
 [package]
 name = "grabit"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2024"
 description = "Selection-triggered actions for Wayland desktops"
 repository = "https://github.com/Magnetar-OS/grabit"

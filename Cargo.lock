@@ -1990,7 +1990,7 @@ dependencies = [
 
 [[package]]
 name = "grabit"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "anyhow",
  "async-channel",
