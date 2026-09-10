@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The pacman repository is published again: the release now carries the
+  `ARCH_REPO_TOKEN` the `arch-repo` job needs, which had been absent, so the
+  job staged and validated the repository and then stopped without pushing.
+
 ## [1.0.1] - 2026-09-10
 
 ### Fixed
