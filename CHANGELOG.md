@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The pacman repository is actually published now. The release secrets are
+  passed to the release kit by name instead of with `secrets: inherit`, which
+  does not carry secrets across organisations — the kit is in entro314-labs and
+  this repository in Magnetar-OS, so `ARCH_REPO_TOKEN` arrived empty and the
+  `arch-repo` job staged, validated and skipped the push while still reporting
+  success. Signing secrets were passed the same way and would have failed the
+  same way.
+
 ## [1.0.2] - 2026-09-10
 
 ### Fixed

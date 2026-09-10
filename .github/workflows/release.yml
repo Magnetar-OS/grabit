@@ -51,7 +51,17 @@ jobs:
       # needs a 256x256 PNG (kit README, icon input). Add 'appimage' here
       # plus the PNG when wanted.
       formats: 'deb,rpm,arch'
-    secrets: inherit
+    # Passed explicitly, NOT `secrets: inherit`: the kit lives in the
+    # entro314-labs organisation and this repository in Magnetar-OS, and
+    # `inherit` does not carry secrets across organisations — ARCH_REPO_TOKEN
+    # arrived empty on every run, so the pacman job staged, validated and then
+    # skipped the push while still reporting success. Naming them is also the
+    # only way to see, here, which secrets a release actually depends on.
+    secrets:
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      LINUX_GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_PRIVATE_KEY }}
+      LINUX_GPG_PASSPHRASE: ${{ secrets.LINUX_GPG_PASSPHRASE }}
+      LINUX_GPG_KEY_ID: ${{ secrets.LINUX_GPG_KEY_ID }}
 
   # Self-hosted pacman repository — Arch installs/updates via pacman -Syu,
   # shared across all entro314-labs apps.
@@ -63,4 +73,15 @@ jobs:
       product_name: 'grabit'
       repo_name: 'magnetar'
       pages_repo: 'Magnetar-OS/arch-repo'
-    secrets: inherit
+    # Passed explicitly, NOT `secrets: inherit`: the kit lives in the
+    # entro314-labs organisation and this repository in Magnetar-OS, and
+    # `inherit` does not carry secrets across organisations — ARCH_REPO_TOKEN
+    # arrived empty on every run, so the pacman job staged, validated and then
+    # skipped the push while still reporting success. Naming them is also the
+    # only way to see, here, which secrets a release actually depends on.
+    secrets:
+      ARCH_REPO_TOKEN: ${{ secrets.ARCH_REPO_TOKEN }}
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      LINUX_GPG_PRIVATE_KEY: ${{ secrets.LINUX_GPG_PRIVATE_KEY }}
+      LINUX_GPG_PASSPHRASE: ${{ secrets.LINUX_GPG_PASSPHRASE }}
+      LINUX_GPG_KEY_ID: ${{ secrets.LINUX_GPG_KEY_ID }}
