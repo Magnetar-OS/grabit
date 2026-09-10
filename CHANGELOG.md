@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-10
+
 ### Fixed
 
 - The Arch package is a valid package again, so the pacman repository updates.
@@ -49,5 +51,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   file as an SPDX identifier.
 - `docs/cosmic-conventions.md`, recording the patterns the COSMIC projects share.
 
-[Unreleased]: https://github.com/Magnetar-OS/grabit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Magnetar-OS/grabit/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Magnetar-OS/grabit/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Magnetar-OS/grabit/releases/tag/v1.0.0

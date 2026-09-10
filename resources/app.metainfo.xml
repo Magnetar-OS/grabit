@@ -31,7 +31,7 @@
        drift from Cargo.toml: this file is listed in release.config.json's
        "versionFiles". -->
   <releases>
-    <release version="1.0.0" date="2026-09-10"> <!-- x-release-kit-version-date -->
+    <release version="1.0.1" date="2026-09-10"> <!-- x-release-kit-version-date -->
       <description>
         <ul>
           <li>First release</li>
