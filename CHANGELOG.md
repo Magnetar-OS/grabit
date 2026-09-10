@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-10
+
 ### Added
 
 - Selection-triggered action bar for Wayland sessions.
@@ -37,3 +39,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   declared in `Cargo.toml`, the AppStream metainfo, the packages and per source
   file as an SPDX identifier.
 - `docs/cosmic-conventions.md`, recording the patterns the COSMIC projects share.
+
+[Unreleased]: https://github.com/Magnetar-OS/grabit/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Magnetar-OS/grabit/releases/tag/v1.0.0
