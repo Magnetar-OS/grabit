@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The Arch package is a valid package again, so the pacman repository updates.
+  Packaging the install tree as one `type: tree` entry at `/` made nfpm emit a
+  tar entry with an empty filename; bsdtar errors on it, so `repo-add` rejected
+  the package as "not a package file". Packaged as one tree per top-level
+  directory instead. The `.deb` and `.rpm` payloads are byte-identical — they
+  tolerated the empty entry, which is why only Arch broke.
+
 ## [1.0.0] - 2026-09-10
 
 ### Added
