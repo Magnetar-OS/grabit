@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //! Template expansion and action execution.
 
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -8,7 +9,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result};
 
 use crate::classify::Classification;
-use crate::config::{Action, After};
+use crate::config::{Action, After, OptionSpec};
 use crate::selection::Grab;
 
 /// How long an `exec` action may run before it is killed. Actions are meant to
@@ -31,11 +32,13 @@ pub enum Outcome {
     Show(String),
 }
 
-/// Everything placeholder expansion can draw on: the selection itself and its
-/// classification.
+/// Everything placeholder expansion can draw on: the selection itself, its
+/// classification, and the options the action declares.
 pub struct Expansion<'a> {
     pub grab: &'a Grab,
     pub class: &'a Classification,
+    /// The invoking action's `[options]` table, read by `{{option:NAME}}`.
+    pub options: &'a BTreeMap<String, OptionSpec>,
 }
 
 /// Percent-encode for use in a URL query component.
@@ -67,6 +70,11 @@ fn percent_encode(s: &str) -> String {
 /// already in the shape their URI scheme wants, and encoding a URL that *is*
 /// the template's value would break it. An action guarded by `detects` always
 /// has its value; without the guard an undetected kind expands to nothing.
+///
+/// `{{option:NAME}}` expands to the action's own option — the value chosen in
+/// the settings window, or the option's `default` until one is. It is encoded
+/// in `url_mode` exactly as `{{text}}` is: an option holds a value, never
+/// URL structure. An option the action does not declare expands to nothing.
 pub fn expand(template: &str, ctx: &Expansion<'_>, url_mode: bool) -> String {
     let text = ctx.grab.text.as_str();
     let trimmed = text.trim();
@@ -115,10 +123,23 @@ pub fn expand(template: &str, ctx: &Expansion<'_>, url_mode: bool) -> String {
                 }),
                 None => plain(text),
             },
-            other => {
-                log::warn!("unknown placeholder `{{{{{other}}}}}` left as-is");
-                format!("{{{{{other}}}}}")
-            }
+            other => match other.strip_prefix("option:") {
+                // An option the action never declared expands to nothing, the
+                // same way an undetected `{{url}}` does: the template asked for
+                // a value that does not exist, and the literal placeholder
+                // would be worse in a URL or an argv than an empty string.
+                Some(key) => match ctx.options.get(key.trim()) {
+                    Some(option) => plain(option.effective()),
+                    None => {
+                        log::warn!("`{{{{{other}}}}}` used but the action declares no such option");
+                        String::new()
+                    }
+                },
+                None => {
+                    log::warn!("unknown placeholder `{{{{{other}}}}}` left as-is");
+                    format!("{{{{{other}}}}}")
+                }
+            },
         });
         rest = &after_open[end + 2..];
     }
@@ -257,7 +278,28 @@ mod tests {
     fn x(template: &str, text: &str, url_mode: bool) -> String {
         let grab = Grab::text(text);
         let class = classify(text);
-        expand(template, &Expansion { grab: &grab, class: &class }, url_mode)
+        let options = BTreeMap::new();
+        expand(template, &Expansion { grab: &grab, class: &class, options: &options }, url_mode)
+    }
+
+    /// An option table holding one option with the given default and value.
+    fn opts(name: &str, default: &str, value: Option<&str>) -> BTreeMap<String, OptionSpec> {
+        BTreeMap::from([(
+            name.to_owned(),
+            OptionSpec {
+                label: name.to_owned(),
+                default: default.to_owned(),
+                choices: Vec::new(),
+                value: value.map(str::to_owned),
+            },
+        )])
+    }
+
+    /// Expand against an action that declares options.
+    fn xo(template: &str, options: &BTreeMap<String, OptionSpec>, url_mode: bool) -> String {
+        let grab = Grab::text("sel");
+        let class = classify("sel");
+        expand(template, &Expansion { grab: &grab, class: &class, options }, url_mode)
     }
 
     #[test]
@@ -312,10 +354,37 @@ mod tests {
     }
 
     #[test]
+    fn option_expands_to_its_value_and_falls_back_to_the_default() {
+        // No value chosen yet: a fresh install expands the declared default.
+        assert_eq!(xo("to={{option:lang}}", &opts("lang", "de", None), false), "to=de");
+        // Once chosen, the value wins.
+        assert_eq!(xo("to={{option:lang}}", &opts("lang", "de", Some("fr")), false), "to=fr");
+    }
+
+    #[test]
+    fn option_is_encoded_in_url_mode_like_any_other_value() {
+        let o = opts("q", "a b&c", None);
+        assert_eq!(xo("s={{option:q}}", &o, true), "s=a%20b%26c");
+        assert_eq!(xo("s={{option:q}}", &o, false), "s=a b&c");
+    }
+
+    #[test]
+    fn undeclared_option_expands_to_nothing() {
+        assert_eq!(xo("x={{option:nope}}", &opts("lang", "de", None), false), "x=");
+    }
+
+    #[test]
+    fn option_name_is_trimmed_and_unknown_placeholders_still_survive() {
+        assert_eq!(xo("{{ option:lang }}", &opts("lang", "de", None), false), "de");
+        assert_eq!(xo("{{nonsense}}", &opts("lang", "de", None), false), "{{nonsense}}");
+    }
+
+    #[test]
     fn html_and_markdown_use_the_html_capture_when_present() {
         let grab = Grab { text: "bold".into(), html: Some("<b>bold</b>".into()) };
         let class = classify("bold");
-        let ctx = Expansion { grab: &grab, class: &class };
+        let options = BTreeMap::new();
+        let ctx = Expansion { grab: &grab, class: &class, options: &options };
         assert_eq!(expand("{{html}}", &ctx, false), "<b>bold</b>");
         assert_eq!(expand("{{markdown}}", &ctx, false), "**bold**");
     }

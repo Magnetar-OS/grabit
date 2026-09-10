@@ -166,6 +166,29 @@ result, which is all the built-in `copy` action is.
 | `{{text_trimmed}}`, `{{text_trimmed_raw}}` | with surrounding whitespace removed |
 | `{{text_url}}`, `{{text_trimmed_url}}` | always percent-encoded |
 | `{{text_line}}` | the first line only |
+| `{{option:NAME}}` | the value of one of the action's own `[options]` |
+
+### Options
+
+An action can declare its own settings. They appear in the settings window
+underneath the action, and expand into `url` and `exec` through
+`{{option:NAME}}`:
+
+```toml
+id = "translate"
+title = "Translate"
+url = "https://translate.google.com/?sl=auto&tl={{option:target}}&text={{text}}"
+
+[options.target]
+label = "Translate into"      # shown in the settings window
+default = "en"                # used until a value is chosen
+choices = ["en", "de", "fr"]  # optional; makes it a dropdown instead of a field
+```
+
+The chosen value is written back into the manifest as `value`, so an option can
+equally be set by editing the file. An option with no `choices` is a free-text
+field. `{{option:NAME}}` is percent-encoded inside `url` exactly as `{{text}}`
+is, and a name the action does not declare expands to nothing.
 
 After editing anything: `grabit reload`.
 

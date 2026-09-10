@@ -156,8 +156,11 @@ impl Engine {
                 Some(builtin) => this.run_builtin(builtin, &grab),
                 None => {
                     let class = classify::classify_full(&grab.text);
-                    actions::run(&action, &Expansion { grab: &grab, class: &class })
-                        .and_then(|o| this.apply(&action.spec.title, o))
+                    actions::run(
+                        &action,
+                        &Expansion { grab: &grab, class: &class, options: &action.spec.options },
+                    )
+                    .and_then(|o| this.apply(&action.spec.title, o))
                 }
             };
             match outcome {

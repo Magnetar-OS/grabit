@@ -3,4 +3,11 @@ title = "Translate"
 icon = "accessories-dictionary-symbolic"
 label = "Translate"
 order = 30
-url = "https://translate.google.com/?sl=auto&tl=en&op=translate&text={{text}}"
+url = "https://translate.google.com/?sl=auto&tl={{option:target}}&op=translate&text={{text}}"
+
+# Set the target language in the settings window, or here as `value`. Any code
+# Google Translate accepts works, so this is a free-text option rather than a
+# fixed list of choices.
+[options.target]
+label = "Translate into"
+default = "en"

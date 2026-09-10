@@ -29,4 +29,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and AppStream metainfo generated from the same catalogue at build time.
 - `justfile` following the COSMIC ecosystem's build and install conventions,
   replacing the Makefile.
+- Per-action `[options]` — an action declares its own settings, which appear in
+  the settings window beneath it as a dropdown (`choices`) or a text field, and
+  expand into `url` and `exec` through `{{option:NAME}}`.
+  The packaged `translate` action uses one for its target language.
+- `GPL-3.0-only` licensing, matching the other COSMIC applications in the set,
+  declared in `Cargo.toml`, the AppStream metainfo, the packages and per source
+  file as an SPDX identifier.
 - `docs/cosmic-conventions.md`, recording the patterns the COSMIC projects share.

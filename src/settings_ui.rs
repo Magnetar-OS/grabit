@@ -11,6 +11,7 @@
 //! when no daemon is running the poke is quietly skipped and the files are
 //! simply there for the next start.
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
@@ -46,6 +47,9 @@ pub enum Message {
     ActionEnabled(usize, bool),
     ActionMove(usize, i32),
     ActionEdit(usize),
+    ActionOptionInput(usize, String, String),
+    ActionOptionCommit(usize, String),
+    ActionOptionChoice(usize, String, String),
     OpenFolder,
 }
 
@@ -54,6 +58,13 @@ struct App {
     config: Config,
     actions: Vec<Action>,
     exclude_input: String,
+    /// Half-typed free-text option values, keyed by action id and option name.
+    ///
+    /// A manifest write per keystroke would rewrite the file and poke the
+    /// daemon on every character, so a free-text option is buffered here and
+    /// committed on Enter. Dropdowns commit immediately: there is nothing to
+    /// half-type.
+    option_edits: BTreeMap<(String, String), String>,
 }
 
 impl App {
@@ -65,6 +76,22 @@ impl App {
             }
             Err(e) => log::error!("reloading configuration: {e:#}"),
         }
+    }
+
+    /// Write one option's chosen value into the action's manifest and apply it.
+    ///
+    /// The value goes in as `[options.NAME] value`, which is where `config.rs`
+    /// reads it from and what `{{option:NAME}}` then expands to.
+    fn set_action_option(&mut self, index: usize, name: &str, chosen: &str) {
+        let Some(action) = self.actions.get(index) else {
+            return;
+        };
+        if let Err(e) = set_action_option(action, name, chosen) {
+            log::error!("setting option `{name}` on `{}`: {e:#}", action.spec.id);
+            return;
+        }
+        poke_daemon();
+        self.refresh();
     }
 
     /// Persist the daemon settings and apply them to a running daemon.
@@ -262,6 +289,45 @@ impl App {
                     .push(widget::space::horizontal().width(Length::Fill))
                     .push(controls),
             );
+
+            // An action's own options, indented beneath it. `choices` is what
+            // makes an option a dropdown; everything else is free text.
+            for (name, option) in &action.spec.options {
+                let control: Element<'_, Message> = if option.choices.is_empty() {
+                    let key = (action.spec.id.clone(), name.clone());
+                    let shown =
+                        self.option_edits.get(&key).map_or(option.effective(), String::as_str);
+                    let (input_name, commit_name) = (name.clone(), name.clone());
+                    widget::text_input("", shown)
+                        .on_input(move |text| {
+                            Message::ActionOptionInput(index, input_name.clone(), text)
+                        })
+                        .on_submit(move |_| Message::ActionOptionCommit(index, commit_name.clone()))
+                        .width(Length::Fixed(180.0))
+                        .into()
+                } else {
+                    let selected = option.choices.iter().position(|c| c == option.effective());
+                    let choices = option.choices.clone();
+                    let name = name.clone();
+                    widget::dropdown(&option.choices, selected, move |picked| {
+                        Message::ActionOptionChoice(index, name.clone(), choices[picked].clone())
+                    })
+                    .into()
+                };
+
+                section = section.add(
+                    widget::row::with_capacity(3)
+                        .spacing(spacing.space_xxs)
+                        .align_y(cosmic::iced::Alignment::Center)
+                        .push(
+                            widget::space::horizontal()
+                                .width(Length::Fixed(f32::from(spacing.space_m))),
+                        )
+                        .push(widget::text::caption(option.label.clone()))
+                        .push(widget::space::horizontal().width(Length::Fill))
+                        .push(control),
+                );
+            }
         }
         section.into()
     }
@@ -284,6 +350,7 @@ impl cosmic::Application for App {
             config: loaded.config,
             actions: loaded.actions,
             exclude_input: String::new(),
+            option_edits: BTreeMap::new(),
         };
         (app, Task::none())
     }
@@ -404,6 +471,22 @@ impl cosmic::Application for App {
                     }
                 }
             }
+            Message::ActionOptionInput(index, name, text) => {
+                if let Some(action) = self.actions.get(index) {
+                    self.option_edits.insert((action.spec.id.clone(), name), text);
+                }
+            }
+            Message::ActionOptionCommit(index, name) => {
+                if let Some(action) = self.actions.get(index) {
+                    let key = (action.spec.id.clone(), name.clone());
+                    if let Some(text) = self.option_edits.remove(&key) {
+                        self.set_action_option(index, &name, &text);
+                    }
+                }
+            }
+            Message::ActionOptionChoice(index, name, choice) => {
+                self.set_action_option(index, &name, &choice);
+            }
             Message::OpenFolder => match config::user_config_dir() {
                 Ok(dir) => open_path(&dir.join("actions")),
                 Err(e) => log::error!("{e:#}"),
@@ -454,6 +537,17 @@ fn set_action_enabled(action: &Action, enabled: bool) -> Result<()> {
         .with_context(|| format!("reading {}", action.origin.display()))?;
     let mut doc: DocumentMut = raw.parse().context("parsing the manifest")?;
     doc["enabled"] = value(enabled);
+    write_user_manifest(action, &doc.to_string())
+}
+
+/// Write `chosen` as an option's `value` in the action's manifest.
+fn set_action_option(action: &Action, name: &str, chosen: &str) -> Result<()> {
+    let raw = std::fs::read_to_string(&action.origin)
+        .with_context(|| format!("reading {}", action.origin.display()))?;
+    let mut doc: DocumentMut = raw.parse().context("parsing the manifest")?;
+    // The option is declared in the manifest already — validation refuses an
+    // undeclared one — so this only ever fills in its `value`.
+    doc["options"][name]["value"] = value(chosen);
     write_user_manifest(action, &doc.to_string())
 }
 

@@ -427,3 +427,25 @@ fn install_defaults(dir: &Path) -> Result<()> {
     log::info!("seeded default configuration in {}", dir.display());
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every manifest grabit ships has to survive its own validation — a broken
+    /// one would only surface on a fresh install, after release.
+    #[test]
+    fn every_packaged_action_parses() {
+        for (name, body) in DEFAULT_ACTIONS {
+            parse_manifest(body).unwrap_or_else(|e| panic!("{name} does not parse: {e:#}"));
+        }
+    }
+
+    #[test]
+    fn the_translate_action_declares_its_target_language() {
+        let action = parse_manifest(include_str!("../actions/translate.toml")).expect("parses");
+        let target = action.spec.options.get("target").expect("declares `target`");
+        assert_eq!(target.effective(), "en");
+        assert!(action.spec.url.as_deref().unwrap().contains("{{option:target}}"));
+    }
+}
