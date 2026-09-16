@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The package is signed. 1.0.3 reached the `[magnetar]` pacman repository
+  unsigned, so a machine using the repository's documented
+  `SigLevel = Required` refused to install it.
+
 ## [1.0.3] - 2026-09-10
 
 ### Fixed
