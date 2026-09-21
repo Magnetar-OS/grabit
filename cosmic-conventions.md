@@ -204,7 +204,7 @@ const APP_ID: &'static str = "com.system76.CosmicLauncher";
 // → Icon=com.system76.CosmicLauncher
 ```
 
-First-party apps use `com.system76.Cosmic<Name>` with a `cosmic-<name>` binary. Community apps use a domain they control or `io.github.<user>.<App>` — cosmic-ext-camera is `io.github.cosmic_utils.camera` — with an unprefixed binary. grabit uses `io.github.idominikos.Grabit` throughout, even though it is a daemon whose desktop entry is `NoDisplay=true` and exists only to autostart it.
+First-party apps use `com.system76.Cosmic<Name>` with a `cosmic-<name>` binary. Community apps use a domain they control or `io.github.<user>.<App>` — cosmic-ext-camera is `io.github.cosmic_utils.camera` — with an unprefixed binary. grabit uses `com.magnetaros.Grabit` throughout, even though it is a daemon whose desktop entry is `NoDisplay=true` and exists only to autostart it.
 
 > **⚠ Renaming is a data migration.** The config store, the XDG data directory, the D-Bus name and every filename move together, and nothing migrates them for you. A rename silently starts the app with empty settings and an empty index. Pick the namespace the rest of your suite uses, the first time.
 
@@ -866,7 +866,7 @@ Where each project stands, and — where it diverges — why. A rejection with a
 | GPL-3.0-only | — | — | partial — `-or-later`, forced by poppler |
 | justfile with rootdir / prefix / cargo-target-dir | follows; `check` is `-D warnings` | follows; install wires nothing up | follows |
 | Nested `data/justfile`, vendoring recipes | skipped — nothing packages it yet | follows | follows |
-| Reverse-DNS APPID across binary and metadata | follows — `io.github.idominikos.Grabit` | follows | follows |
+| Reverse-DNS APPID across binary and metadata | follows — `com.magnetaros.Grabit` | follows | follows |
 | xdgen-generated desktop entry and metainfo | adopted, with a `CARGO_TARGET_DIR` fix | deferred until a second language exists | rejected — dependency re-resolution broke single-instance |
 | Full metainfo, validated in CI | — | follows | follows — found the wrapped-MimeType bug |
 | i18n-embed + Fluent + `fl!` | scoped — only what grabit itself says | follows | follows |

@@ -46,8 +46,12 @@ ecosystem uses.
 ```sh
 just                # cargo build --release
 sudo just install
-systemctl --user enable --now grabit.service
 ```
+
+grabit starts at login from its XDG autostart entry. The systemd user unit is
+optional — enable it (`systemctl --user enable grabit.service`) if you want a
+crashed daemon restarted. Having both is harmless: whichever starts second
+finds grabit already running and exits successfully.
 
 On GNOME, additionally:
 

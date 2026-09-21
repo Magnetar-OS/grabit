@@ -1,5 +1,5 @@
 export NAME := 'grabit'
-export APPID := 'io.github.idominikos.Grabit'
+export APPID := 'com.magnetaros.Grabit'
 export EXTENSION := 'grabit@grabit.local'
 
 rootdir := ''

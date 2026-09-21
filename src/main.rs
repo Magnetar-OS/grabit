@@ -88,7 +88,9 @@ fn run() -> Result<()> {
     if capabilities.supports_layer_frontend() {
         let injector = open_injector(capabilities.virtual_keyboard);
         let engine = Engine::new(loaded, injector, feedback_tx);
-        let commands = control::serve()?;
+        let Some(commands) = control::serve()? else {
+            return already_running();
+        };
 
         // The watcher needs its own connection and thread: it blocks on Wayland
         // events and on reading selection transfers.
@@ -120,12 +122,22 @@ fn run() -> Result<()> {
             }
         };
         let engine = Engine::new(loaded, injector, feedback_tx);
-        let commands = control::serve()?;
+        let Some(commands) = control::serve()? else {
+            return already_running();
+        };
         log::info!("front-end: GNOME Shell extension");
         return ui_gnome::run(engine, commands, feedback_rx);
     }
 
     anyhow::bail!(explain_unsupported(&capabilities))
+}
+
+/// A second `grabit run` is a no-op that succeeds: the autostart entry and the
+/// user unit can both start grabit at login, and whichever comes second must
+/// neither run a daemon nobody can reach nor fail and be restarted forever.
+fn already_running() -> Result<()> {
+    log::info!("grabit is already running (it owns {}); nothing to do", control::BUS_NAME);
+    Ok(())
 }
 
 fn open_injector(supported: bool) -> Option<Box<dyn Injector>> {

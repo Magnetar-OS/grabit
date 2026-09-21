@@ -502,7 +502,7 @@ impl cosmic::Application for Grabit {
     type Flags = Flags;
     type Message = Message;
 
-    const APP_ID: &'static str = "io.github.idominikos.Grabit";
+    const APP_ID: &'static str = "com.magnetaros.Grabit";
 
     fn init(mut core: Core, flags: Flags) -> (Self, Task<Message>) {
         core.set_app_type(cosmic::core::AppType::System);

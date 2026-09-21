@@ -61,7 +61,13 @@ impl Control {
 }
 
 /// Claim the bus name and start serving. Returns the command stream.
-pub fn serve() -> Result<async_channel::Receiver<Command>> {
+/// Claim the bus name and start serving.
+///
+/// `Ok(None)` means another grabit already owns the name. That is the normal
+/// outcome when both the XDG autostart entry and the systemd user unit start
+/// grabit at login, so the caller treats it as success, not as an error — an
+/// error there sent `Restart=on-failure` into a loop.
+pub fn serve() -> Result<Option<async_channel::Receiver<Command>>> {
     let (tx, rx) = async_channel::bounded(16);
 
     let connection = zbus::blocking::connection::Builder::session()
@@ -75,14 +81,16 @@ pub fn serve() -> Result<async_channel::Receiver<Command>> {
     // is already taken is an immediate error. The builder's default is to wait
     // in the queue, which would silently leave a second daemon running with no
     // way to reach it.
-    let reply = connection
-        .request_name_with_flags(BUS_NAME, zbus::fdo::RequestNameFlags::DoNotQueue.into())
-        .with_context(|| format!("claiming {BUS_NAME}"))?;
+    // zbus reports a taken name as `Error::NameTaken`, not as an `Exists`
+    // reply, so both are the "already running" outcome.
     use zbus::fdo::RequestNameReply;
-    anyhow::ensure!(
-        matches!(reply, RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner),
-        "another grabit already owns {BUS_NAME}; stop it with `grabit quit` first"
-    );
+    match connection
+        .request_name_with_flags(BUS_NAME, zbus::fdo::RequestNameFlags::DoNotQueue.into())
+    {
+        Ok(RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) => {}
+        Ok(_) | Err(zbus::Error::NameTaken) => return Ok(None),
+        Err(e) => return Err(e).with_context(|| format!("claiming {BUS_NAME}")),
+    }
 
     // The connection has to outlive this function or the name is released
     // immediately; a parked thread owns it for the lifetime of the process.
@@ -96,7 +104,7 @@ pub fn serve() -> Result<async_channel::Receiver<Command>> {
         })
         .context("spawning the D-Bus thread")?;
 
-    Ok(rx)
+    Ok(Some(rx))
 }
 
 /// Call a method on an already-running daemon.

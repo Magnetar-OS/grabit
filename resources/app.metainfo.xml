@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.idominikos.Grabit</id>
+  <id>com.magnetaros.Grabit</id>
   <name>grabit</name>
   <summary>Selection-triggered actions for Wayland desktops</summary>
   <metadata_license>CC0-1.0</metadata_license>
@@ -8,7 +8,7 @@
   <url type="homepage">https://github.com/Magnetar-OS/grabit</url>
   <url type="bugtracker">https://github.com/Magnetar-OS/grabit/issues</url>
   <url type="vcs-browser">https://github.com/Magnetar-OS/grabit</url>
-  <launchable type="desktop-id">io.github.idominikos.Grabit.desktop</launchable>
+  <launchable type="desktop-id">com.magnetaros.Grabit.desktop</launchable>
   <provides>
     <binaries>
       <binary>grabit</binary>

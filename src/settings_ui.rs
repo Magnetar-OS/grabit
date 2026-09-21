@@ -338,7 +338,7 @@ impl cosmic::Application for App {
     type Flags = ();
     type Message = Message;
 
-    const APP_ID: &'static str = "io.github.idominikos.GrabitSettings";
+    const APP_ID: &'static str = "com.magnetaros.GrabitSettings";
 
     fn init(core: Core, (): ()) -> (Self, Task<Message>) {
         let loaded = config::load().unwrap_or_else(|e| {

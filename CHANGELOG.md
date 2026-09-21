@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The application ID is `com.magnetaros.Grabit`, like the rest of the suite;
+  it was still `io.github.idominikos.Grabit`. The autostart entry, AppStream
+  metadata and window IDs follow. Settings live in `~/.config/grabit` and are
+  unaffected.
+
+### Fixed
+
+- A second `grabit run` exits successfully instead of failing. The package
+  installs both an autostart entry and a systemd user unit; with both active,
+  whichever started second errored, and the unit's `Restart=on-failure`
+  retried it until systemd gave up.
+
 ## [1.0.4] - 2026-09-16
 
 ### Fixed

@@ -110,7 +110,7 @@ domain they control, or `io.github.<user>.<App>` for GitHub-hosted ones.
 `<launchable type="desktop-id">` in the metainfo, and by the compositor when it
 matches a running application to its desktop entry.
 
-**grabit**: `io.github.idominikos.Grabit` throughout, even though grabit is a
+**grabit**: `com.magnetaros.Grabit` throughout, even though grabit is a
 daemon whose desktop entry is `NoDisplay=true` and exists only to autostart it.
 
 ---
