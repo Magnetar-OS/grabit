@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A "grabit Settings" entry in the applications menu. The settings window was
+  only reachable as `grabit settings` from a terminal; the daemon's own entry
+  is autostart-only and hidden.
+
 ### Fixed
 
 - Selecting text no longer blurs the whole screen on COSMIC when the theme's

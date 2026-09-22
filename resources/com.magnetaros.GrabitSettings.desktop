@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=grabit Settings
+Comment=Choose the actions offered on selected text
+Exec=grabit settings
+# grabit has no icon of its own yet.
+Icon=preferences-desktop
+Terminal=false
+Categories=COSMIC;Settings;DesktopSettings;
+Keywords=selection;clipboard;actions;popup;text;
+StartupNotify=true
+StartupWMClass=com.magnetaros.GrabitSettings

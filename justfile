@@ -20,6 +20,9 @@ desktop-src := cargo-target-dir / 'xdgen' / 'app.desktop'
 desktop-dst := absolute_path(clean(rootdir / 'etc')) / 'xdg' / 'autostart' / (APPID + '.desktop')
 metainfo-src := cargo-target-dir / 'xdgen' / 'app.metainfo.xml'
 metainfo-dst := base-dir / 'share' / 'metainfo' / (APPID + '.metainfo.xml')
+# The daemon has no window; the settings window is what the applications menu shows.
+settings-desktop-src := 'resources' / (APPID + 'Settings.desktop')
+settings-desktop-dst := base-dir / 'share' / 'applications' / (APPID + 'Settings.desktop')
 
 # GNOME Shell extensions are per-user, never system packages.
 extension-dst := env('HOME') / '.local' / 'share' / 'gnome-shell' / 'extensions' / EXTENSION
@@ -57,6 +60,7 @@ install: build-release
     install -d {{actions-dst}}
     install -Dm0644 actions/*.toml -t {{actions-dst}}
     install -Dm0644 {{desktop-src}} {{desktop-dst}}
+    install -Dm0644 {{settings-desktop-src}} {{settings-desktop-dst}}
     install -Dm0644 {{metainfo-src}} {{metainfo-dst}}
     install -Dm0644 data/grabit.service {{service-dst}}
 
@@ -68,6 +72,6 @@ install-extension:
 
 # Removes everything `install` and `install-extension` put down.
 uninstall:
-    rm -f {{bin-dst}} {{desktop-dst}} {{metainfo-dst}} {{service-dst}}
+    rm -f {{bin-dst}} {{desktop-dst}} {{settings-desktop-dst}} {{metainfo-dst}} {{service-dst}}
     rm -rf {{base-dir}}/share/{{NAME}}
     rm -rf {{extension-dst}}
