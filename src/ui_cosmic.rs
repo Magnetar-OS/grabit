@@ -54,6 +54,7 @@ use cosmic::iced::runtime::core::layout::Limits;
 use cosmic::iced::runtime::core::window::Id as SurfaceId;
 use cosmic::iced::runtime::platform_specific::wayland::layer_surface::{IcedMargin, IcedOutput};
 use cosmic::iced::{self, Length, Point, Size, Subscription};
+use cosmic::surface::action::{LiveSettings, simple_layer_shell};
 use cosmic::widget;
 use cosmic::{Element, theme};
 use futures::StreamExt;
@@ -230,27 +231,36 @@ impl Grabit {
 
         Task::batch([
             teardown,
-            get_layer_surface(SctkLayerSurfaceSettings {
-                id,
-                layer: Layer::Overlay,
-                // Taking keyboard focus would move it away from the application
-                // the user selected in, and a paste would then land elsewhere.
-                keyboard_interactivity: KeyboardInteractivity::None,
-                // No zone means "all input", which is the point of the hunter.
-                input_zone: None,
-                // Anchoring to opposite edges stretches the surface across the
-                // output, which makes surface-local pointer coordinates equal to
-                // coordinates on that output.
-                anchor: Anchor::TOP | Anchor::BOTTOM | Anchor::LEFT | Anchor::RIGHT,
-                output: IcedOutput::Active,
-                namespace: "grabit-hunter".into(),
-                margin: IcedMargin::default(),
-                size: Some((None, None)),
-                // -1 opts out of other clients' exclusive zones, so the hunter
-                // really does cover the whole output, panels included.
-                exclusive_zone: -1,
-                size_limits: Limits::NONE.min_width(1.0).min_height(1.0),
-            }),
+            // Created through libcosmic's surface API rather than a bare
+            // `get_layer_surface`, because only that path carries per-surface
+            // settings. With frosted system surfaces enabled in the theme,
+            // libcosmic blurs every layer surface an app opens, and blurring a
+            // transparent full-screen surface blurs the whole screen.
+            cosmic::surface::surface_task(simple_layer_shell::<Message>(
+                || LiveSettings { blur: Some(false), ..LiveSettings::default() },
+                move || SctkLayerSurfaceSettings {
+                    id,
+                    layer: Layer::Overlay,
+                    // Taking keyboard focus would move it away from the application
+                    // the user selected in, and a paste would then land elsewhere.
+                    keyboard_interactivity: KeyboardInteractivity::None,
+                    // No zone means "all input", which is the point of the hunter.
+                    input_zone: None,
+                    // Anchoring to opposite edges stretches the surface across the
+                    // output, which makes surface-local pointer coordinates equal to
+                    // coordinates on that output.
+                    anchor: Anchor::TOP | Anchor::BOTTOM | Anchor::LEFT | Anchor::RIGHT,
+                    output: IcedOutput::Active,
+                    namespace: "grabit-hunter".into(),
+                    margin: IcedMargin::default(),
+                    size: Some((None, None)),
+                    // -1 opts out of other clients' exclusive zones, so the hunter
+                    // really does cover the whole output, panels included.
+                    exclusive_zone: -1,
+                    size_limits: Limits::NONE.min_width(1.0).min_height(1.0),
+                },
+                None::<fn() -> Element<'static, cosmic::Action<Message>>>,
+            )),
             timer(HUNT_WINDOW, move || Message::HuntExpired(epoch)),
         ])
     }

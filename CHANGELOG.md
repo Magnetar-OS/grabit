@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Selecting text no longer blurs the whole screen on COSMIC when the theme's
+  frosted system interface is on. The invisible full-screen surface that waits
+  for the pointer was being frosted like any other panel; it now opts out.
+
 ## [1.1.0] - 2026-09-21
 
 ### Changed
