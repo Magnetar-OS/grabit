@@ -46,6 +46,13 @@ settings-move-down = Move down
 settings-edit-file = Edit the manifest
 settings-open-folder = Open the actions folder
 settings-disabled = disabled
+settings-error-reload = Could not load the configuration
+settings-error-save = Could not save config.toml
+settings-error-option = Could not set “{ $name }” on { $action }
+settings-error-toggle = Could not enable or disable { $action }
+settings-error-reorder = Could not reorder the actions
+settings-error-edit = Could not prepare { $action } for editing
+settings-error-folder = Could not find the actions folder
 
 # `grabit doctor`
 doctor-capabilities = Wayland capabilities

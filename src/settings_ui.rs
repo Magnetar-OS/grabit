@@ -51,6 +51,7 @@ pub enum Message {
     ActionOptionCommit(usize, String),
     ActionOptionChoice(usize, String, String),
     OpenFolder,
+    DismissError,
 }
 
 struct App {
@@ -61,6 +62,9 @@ struct App {
     /// Whether this session can tell grabit which app is focused, without
     /// which the exclude list has no effect.
     per_app: bool,
+    /// The last write or load that failed, shown until dismissed. A failed
+    /// write otherwise just looks like a control snapping back.
+    error: Option<String>,
     /// Half-typed free-text option values, keyed by action id and option name.
     ///
     /// A manifest write per keystroke would rewrite the file and poke the
@@ -71,13 +75,20 @@ struct App {
 }
 
 impl App {
+    /// Log a failure and show it in the window.
+    fn fail(&mut self, what: impl std::fmt::Display, e: &anyhow::Error) {
+        let message = format!("{what}: {e:#}");
+        log::error!("{message}");
+        self.error = Some(message);
+    }
+
     fn refresh(&mut self) {
         match config::load() {
             Ok(loaded) => {
                 self.config = loaded.config;
                 self.actions = loaded.actions;
             }
-            Err(e) => log::error!("reloading configuration: {e:#}"),
+            Err(e) => self.fail(crate::fl!("settings-error-reload"), &e),
         }
     }
 
@@ -90,7 +101,9 @@ impl App {
             return;
         };
         if let Err(e) = set_action_option(action, name, chosen) {
-            log::error!("setting option `{name}` on `{}`: {e:#}", action.spec.id);
+            let what =
+                crate::fl!("settings-error-option", name = name, action = action.spec.id.as_str());
+            self.fail(what, &e);
             return;
         }
         poke_daemon();
@@ -98,9 +111,9 @@ impl App {
     }
 
     /// Persist the daemon settings and apply them to a running daemon.
-    fn save_config(&self) {
+    fn save_config(&mut self) {
         if let Err(e) = write_config(&self.config) {
-            log::error!("saving config.toml: {e:#}");
+            self.fail(crate::fl!("settings-error-save"), &e);
             return;
         }
         poke_daemon();
@@ -347,18 +360,16 @@ impl cosmic::Application for App {
     const APP_ID: &'static str = "com.magnetaros.GrabitSettings";
 
     fn init(core: Core, (): ()) -> (Self, Task<Message>) {
-        let loaded = config::load().unwrap_or_else(|e| {
-            log::error!("loading configuration: {e:#}");
-            config::Loaded { config: Config::default(), actions: Vec::new() }
-        });
-        let app = App {
+        let mut app = App {
             core,
-            config: loaded.config,
-            actions: loaded.actions,
+            config: Config::default(),
+            actions: Vec::new(),
             exclude_input: String::new(),
             per_app: per_app_available(),
+            error: None,
             option_edits: BTreeMap::new(),
         };
+        app.refresh();
         (app, Task::none())
     }
 
@@ -372,13 +383,22 @@ impl cosmic::Application for App {
 
     fn view(&self) -> Element<'_, Message> {
         let spacing = theme::spacing();
+        let error = self
+            .error
+            .as_deref()
+            .map(|error| widget::warning(error).on_close(Message::DismissError).into());
         widget::scrollable(
-            widget::container(settings::view_column(vec![
-                self.popup_section(),
-                self.selection_section(),
-                self.applications_section(),
-                self.actions_section(),
-            ]))
+            widget::container(settings::view_column(
+                error
+                    .into_iter()
+                    .chain([
+                        self.popup_section(),
+                        self.selection_section(),
+                        self.applications_section(),
+                        self.actions_section(),
+                    ])
+                    .collect(),
+            ))
             .padding(spacing.space_m)
             .max_width(640.0),
         )
@@ -451,7 +471,9 @@ impl cosmic::Application for App {
             Message::ActionEnabled(index, enabled) => {
                 if let Some(action) = self.actions.get(index) {
                     if let Err(e) = set_action_enabled(action, enabled) {
-                        log::error!("toggling `{}`: {e:#}", action.spec.id);
+                        let what =
+                            crate::fl!("settings-error-toggle", action = action.spec.id.as_str());
+                        self.fail(what, &e);
                     }
                     poke_daemon();
                     self.refresh();
@@ -462,7 +484,7 @@ impl cosmic::Application for App {
                 if target >= 0 && (target as usize) < self.actions.len() {
                     self.actions.swap(index, target as usize);
                     if let Err(e) = renumber_actions(&self.actions) {
-                        log::error!("reordering actions: {e:#}");
+                        self.fail(crate::fl!("settings-error-reorder"), &e);
                     }
                     poke_daemon();
                     self.refresh();
@@ -474,7 +496,11 @@ impl cosmic::Application for App {
                     // materialise one if only the packaged file exists.
                     match user_copy_of(action) {
                         Ok(path) => open_path(&path),
-                        Err(e) => log::error!("preparing `{}` for editing: {e:#}", action.spec.id),
+                        Err(e) => {
+                            let what =
+                                crate::fl!("settings-error-edit", action = action.spec.id.as_str());
+                            self.fail(what, &e);
+                        }
                     }
                 }
             }
@@ -496,8 +522,9 @@ impl cosmic::Application for App {
             }
             Message::OpenFolder => match config::user_config_dir() {
                 Ok(dir) => open_path(&dir.join("actions")),
-                Err(e) => log::error!("{e:#}"),
+                Err(e) => self.fail(crate::fl!("settings-error-folder"), &e),
             },
+            Message::DismissError => self.error = None,
         }
         Task::none()
     }

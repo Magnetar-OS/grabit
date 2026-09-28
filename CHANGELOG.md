@@ -14,6 +14,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The settings window says when the session cannot tell grabit which
   application is focused, instead of offering an exclude list that would have
   no effect there.
+- The settings window shows why a change could not be saved — an unreadable
+  `config.toml`, a manifest it cannot rewrite — instead of only logging it
+  while the control snaps back.
 
 ### Fixed
 
