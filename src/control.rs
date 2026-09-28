@@ -61,7 +61,6 @@ impl Control {
 }
 
 /// Claim the bus name and start serving. Returns the command stream.
-/// Claim the bus name and start serving.
 ///
 /// `Ok(None)` means another grabit already owns the name. That is the normal
 /// outcome when both the XDG autostart entry and the systemd user unit start
