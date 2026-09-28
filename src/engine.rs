@@ -287,7 +287,7 @@ impl Engine {
 
         // Anything that executes or expands into a shell-adjacent context is
         // written disabled, whatever the manifest claimed.
-        let must_disable = action.spec.exec.is_some() && action.spec.enabled;
+        let must_disable = runs_anything(&action.spec) && action.spec.enabled;
         let body = if must_disable { disable_in_manifest(manifest)? } else { manifest.to_owned() };
 
         let dir = config::user_config_dir()?.join("actions");
@@ -307,6 +307,15 @@ impl Engine {
         self.reload()?;
         Ok((id, must_disable || !action.spec.enabled))
     }
+}
+
+/// Whether an installed action could start something other than a web page:
+/// any `exec`, and any `url` that is not literally an http(s) address — a
+/// `file:`, custom-scheme or `{{url}}` template hands the selection to
+/// whichever handler the scheme resolves to.
+fn runs_anything(spec: &config::ActionSpec) -> bool {
+    let web = |url: &str| url.starts_with("https://") || url.starts_with("http://");
+    spec.exec.is_some() || spec.url.as_deref().is_some_and(|url| !web(url))
 }
 
 /// Rewrite a manifest so it loads disabled, whether or not it already carried
@@ -383,6 +392,19 @@ mod tests {
             )
             .expect_err("a taken id was installed over");
         assert!(format!("{error:#}").contains("already exists"));
+    }
+
+    #[test]
+    fn only_web_urls_install_enabled() {
+        let spec = |body: &str| {
+            crate::config::parse_manifest(&format!("id = \"x\"\ntitle = \"X\"\n{body}\n"))
+                .expect("a valid manifest")
+                .spec
+        };
+        assert!(!runs_anything(&spec("url = \"https://example.org/?q={{text}}\"")));
+        assert!(runs_anything(&spec("url = \"{{url}}\"")));
+        assert!(runs_anything(&spec("url = \"steam://run/{{text}}\"")));
+        assert!(runs_anything(&spec("exec = [\"true\"]")));
     }
 
     #[test]

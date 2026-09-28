@@ -62,6 +62,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Installing an action from a selection no longer replaces an existing action
   with the same id, or an existing file with the same name. It stops and says
   so; change the id in the selection or edit the existing action.
+- An action installed from a selection whose `url` is not a plain http(s)
+  address — a `file:` link, a custom scheme, a `{{url}}` template — now lands
+  disabled like one that runs a command, since it hands the selection to
+  whatever handles that scheme.
 
 ## [1.1.0] - 2026-09-21
 
