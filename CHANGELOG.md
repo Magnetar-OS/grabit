@@ -48,6 +48,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The daemon no longer grows for as long as the session runs. Every selection
   change — one per pointer motion during a drag — left its data-control offer
   alive in grabit and in the compositor.
+- Cut, Paste and replacing actions chosen from a bar raised with
+  `grabit show` act on the application again. The keystroke was sent while
+  the bar still held keyboard focus, so it could land in the bar instead.
 
 ## [1.1.0] - 2026-09-21
 

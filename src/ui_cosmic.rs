@@ -68,6 +68,11 @@ use crate::selection::{self, Grab, Raw, Settled};
 /// How long the hunter waits to be told where the pointer is before giving up.
 const HUNT_WINDOW: Duration = Duration::from_secs(4);
 
+/// How long an action from a keyboard-focused bar waits after the bar's
+/// destroy is sent, for the compositor to return focus to the application
+/// the keystroke is meant for.
+const FOCUS_RETURN: Duration = Duration::from_millis(60);
+
 /// The entrance animation: the bar starts this many logical pixels below its
 /// place and slides up over [`ANIM_STEPS`] frames.
 const ANIM_SLIDE: f32 = 12.0;
@@ -117,6 +122,8 @@ pub enum Message {
     /// The pointer entered or left the bar.
     Hover(SurfaceId, bool),
     Invoke(String),
+    /// Run an action once a keyboard-focused bar has handed focus back.
+    InvokeAfterFocusReturn(String, Grab),
     /// Flip to another page of actions; the offset is ±1.
     Page(i32),
     /// A keyboard gesture, only delivered while the bar holds keyboard focus.
@@ -536,7 +543,18 @@ impl Grabit {
             return Task::none();
         }
         let grab = std::mem::take(&mut self.grab);
+        let keyboard = self.keyboard;
         let teardown = self.teardown();
+        if keyboard {
+            // A bar raised by `grabit show` holds exclusive keyboard focus.
+            // The worker would inject Delete or Ctrl+V at once, from another
+            // connection, while the destroy request is still a task iced has
+            // not run — so the keystroke could land in the bar itself. The
+            // action waits until the destroy has been sent and the compositor
+            // has had a moment to give focus back.
+            return teardown
+                .chain(timer(FOCUS_RETURN, move || Message::InvokeAfterFocusReturn(action, grab)));
+        }
         self.engine.invoke(&action, grab);
         teardown
     }
@@ -674,6 +692,10 @@ impl cosmic::Application for Grabit {
             }
 
             Message::Invoke(action) => self.invoke(action),
+            Message::InvokeAfterFocusReturn(action, grab) => {
+                self.engine.invoke(&action, grab);
+                Task::none()
+            }
 
             Message::Page(offset) => {
                 let (_, pages) = self.visible();

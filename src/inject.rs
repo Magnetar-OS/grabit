@@ -7,8 +7,10 @@
 //! auto-formats, and would need a keymap entry per codepoint. Pasting needs
 //! exactly one key.
 //!
-//! The popup never takes keyboard focus (its layer surface asks for none), so
-//! the application the user selected in is still focused when this fires.
+//! A bar raised by a selection never takes keyboard focus, so the application
+//! the user selected in is still focused when this fires. A bar raised by
+//! `grabit show` does take it; the front-end holds such an invocation back
+//! until the bar is gone and focus has returned.
 
 use std::io::Write;
 
