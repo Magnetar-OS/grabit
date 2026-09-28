@@ -12,6 +12,9 @@ ExecStart=/usr/bin/grabit run
 ExecReload=/usr/bin/grabit reload
 Restart=on-failure
 RestartSec=2
+# 78: this session offers grabit no way to run (for example GNOME before the
+# shell extension is enabled). Restarting cannot change that.
+RestartPreventExitStatus=78
 
 [Install]
 WantedBy=graphical-session.target

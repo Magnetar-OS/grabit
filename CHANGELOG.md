@@ -66,6 +66,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   address — a `file:` link, a custom scheme, a `{{url}}` template — now lands
   disabled like one that runs a command, since it hands the selection to
   whatever handles that scheme.
+- In a session grabit cannot run in — GNOME before the shell extension is
+  enabled — the user unit now stops once with the reason in the journal,
+  instead of restarting until systemd's start limit marks it failed.
 
 ## [1.1.0] - 2026-09-21
 

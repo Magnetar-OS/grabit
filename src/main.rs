@@ -129,8 +129,16 @@ fn run() -> Result<()> {
         return ui_gnome::run(engine, commands, feedback_rx);
     }
 
-    anyhow::bail!(explain_unsupported(&capabilities))
+    // Not a failure a restart can fix — GNOME before its extension is
+    // enabled, say — so exit with the status the user unit does not restart
+    // on, rather than failing into a restart loop until the start limit.
+    log::error!("{}", explain_unsupported(&capabilities));
+    std::process::exit(UNSUPPORTED_SESSION)
 }
+
+/// Exit status for a session grabit cannot run in. `data/grabit.service`
+/// names it in `RestartPreventExitStatus=`. 78 is `EX_CONFIG` in sysexits.h.
+const UNSUPPORTED_SESSION: i32 = 78;
 
 /// A second `grabit run` is a no-op that succeeds: the autostart entry and the
 /// user unit can both start grabit at login, and whichever comes second must
@@ -280,4 +288,16 @@ fn doctor() -> Result<()> {
         ),
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    /// The user unit restarts on failure; an unsupported session is not a
+    /// failure a restart can fix, so the unit has to exempt its exit status.
+    #[test]
+    fn the_user_unit_does_not_restart_an_unsupported_session() {
+        let unit = include_str!("../data/grabit.service");
+        let expected = format!("RestartPreventExitStatus={}", super::UNSUPPORTED_SESSION);
+        assert!(unit.lines().any(|line| line.trim() == expected), "missing `{expected}`");
+    }
 }
