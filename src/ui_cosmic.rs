@@ -131,7 +131,9 @@ pub enum Message {
     /// A timer belonging to the generation it carries expired.
     HuntExpired(u64),
     Expired(u64),
-    Dismiss(u64),
+    /// The pointer left the bar and did not come back: the generation, and
+    /// the count of entries at the time it left.
+    Dismiss(u64, u64),
 }
 
 struct Grabit {
@@ -172,12 +174,44 @@ struct Grabit {
     /// drawn *beside* the pointer, so dismissing on the first leave would take
     /// it away the instant it arrived.
     hovered: bool,
+    /// How many times the pointer has entered the bar. A dismissal armed by
+    /// a leave carries the count it saw, so coming back makes it stale.
+    entries: u64,
     /// Bumped whenever the popup is torn down, so timers armed for an older
     /// popup can tell that they are stale.
     epoch: u64,
 }
 
 impl Grabit {
+    /// The idle state: no hunter, no bar, nothing pending.
+    fn new(core: Core, flags: Flags, focus: Option<crate::focus::Handle>) -> Self {
+        Grabit {
+            core,
+            engine: flags.engine,
+            commands: flags.commands,
+            selections: flags.selections,
+            feedback: flags.feedback,
+            focus,
+            dummy: SurfaceId::unique(),
+            hunter: None,
+            bar: None,
+            grab: Grab::default(),
+            buttons: Vec::new(),
+            page: 0,
+            focused: None,
+            keyboard: false,
+            result: None,
+            awaiting: false,
+            anchor: Point::ORIGIN,
+            bar_size: Size::ZERO,
+            output: Size::new(f32::MAX, f32::MAX),
+            anim: ANIM_STEPS,
+            hovered: false,
+            entries: 0,
+            epoch: 0,
+        }
+    }
+
     /// Tear down the hunter and the bar, invalidating any pending timers.
     fn teardown(&mut self) -> Task<Message> {
         self.epoch = self.epoch.wrapping_add(1);
@@ -528,36 +562,12 @@ impl cosmic::Application for Grabit {
             }
         };
 
-        let dummy = SurfaceId::unique();
-        let app = Grabit {
-            core,
-            engine: flags.engine,
-            commands: flags.commands,
-            selections: flags.selections,
-            feedback: flags.feedback,
-            focus,
-            dummy,
-            hunter: None,
-            bar: None,
-            grab: Grab::default(),
-            buttons: Vec::new(),
-            page: 0,
-            focused: None,
-            keyboard: false,
-            result: None,
-            awaiting: false,
-            anchor: Point::ORIGIN,
-            bar_size: Size::ZERO,
-            output: Size::new(f32::MAX, f32::MAX),
-            anim: ANIM_STEPS,
-            hovered: false,
-            epoch: 0,
-        };
+        let app = Grabit::new(core, flags, focus);
 
         // A surface that exists for no reason other than to exist. Without it
         // the process would own none between popups.
         let task = get_layer_surface(SctkLayerSurfaceSettings {
-            id: dummy,
+            id: app.dummy,
             layer: Layer::Background,
             keyboard_interactivity: KeyboardInteractivity::None,
             // An empty zone accepts nothing, so it cannot swallow a click.
@@ -651,14 +661,15 @@ impl cosmic::Application for Grabit {
                 }
                 if inside {
                     self.hovered = true;
+                    self.entries = self.entries.wrapping_add(1);
                     return Task::none();
                 }
                 let dismiss = self.engine.config().popup.dismiss_ms;
                 if !self.hovered || dismiss == 0 {
                     return Task::none();
                 }
-                let epoch = self.epoch;
-                timer(Duration::from_millis(dismiss), move || Message::Dismiss(epoch))
+                let (epoch, entries) = (self.epoch, self.entries);
+                timer(Duration::from_millis(dismiss), move || Message::Dismiss(epoch, entries))
             }
 
             Message::Invoke(action) => self.invoke(action),
@@ -759,8 +770,14 @@ impl cosmic::Application for Grabit {
                 log::debug!("pointer never moved; not showing the bar for this selection");
                 self.teardown()
             }
-            Message::Expired(epoch) | Message::Dismiss(epoch) => {
+            Message::Expired(epoch) => {
                 if epoch != self.epoch {
+                    return Task::none();
+                }
+                self.teardown()
+            }
+            Message::Dismiss(epoch, entries) => {
+                if epoch != self.epoch || entries != self.entries {
                     return Task::none();
                 }
                 self.teardown()
@@ -894,6 +911,41 @@ fn set_margin_of(id: SurfaceId, margin: IcedMargin) -> Task<Message> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use cosmic::Application as _;
+
+    /// A daemon in its idle state, with no configuration beyond the defaults
+    /// and a bar standing in for one the pointer placed.
+    fn with_bar() -> (Grabit, SurfaceId) {
+        let (_, commands) = async_channel::bounded(1);
+        let (_, selections) = async_channel::bounded(1);
+        let (feedback_tx, feedback) = async_channel::bounded(1);
+        let loaded =
+            crate::config::Loaded { config: crate::config::Config::default(), actions: Vec::new() };
+        let flags = Flags {
+            engine: Engine::new(loaded, None, feedback_tx),
+            commands,
+            selections,
+            feedback,
+        };
+        let mut app = Grabit::new(Core::default(), flags, None);
+        let bar = SurfaceId::unique();
+        app.bar = Some(bar);
+        (app, bar)
+    }
+
+    /// Leaving the bar arms a dismissal; coming back before it fires must
+    /// keep the bar, or it vanishes from under the pointer.
+    #[test]
+    fn returning_to_the_bar_cancels_the_dismissal_its_leaving_armed() {
+        let (mut app, bar) = with_bar();
+        let _ = app.update(Message::Hover(bar, true));
+        let _ = app.update(Message::Hover(bar, false));
+        let armed = Message::Dismiss(app.epoch, app.entries);
+        let _ = app.update(Message::Hover(bar, true));
+        let _ = app.update(armed);
+        assert_eq!(app.bar, Some(bar), "the bar was dismissed while the pointer was on it");
+    }
 
     const OUTPUT: Size = Size { width: 1920.0, height: 1080.0 };
     const BAR: Size = Size { width: 200.0, height: 40.0 };
