@@ -862,7 +862,7 @@ Where each project stands, and — where it diverges — why. A rejection with a
 | Convention | grabit | Locket | Peek |
 |---|---|---|---|
 | libcosmic unpinned, Cargo.lock committed | follows | follows | follows |
-| rust-version 1.93 / rust-toolchain.toml / rustfmt.toml | follows | follows | partial — version only; rustfmt would reformat the tree |
+| rust-version / rust-toolchain.toml / rustfmt.toml | follows — 1.98.1, the suite pin | follows | partial — version only; rustfmt would reformat the tree |
 | GPL-3.0-only | — | — | partial — `-or-later`, forced by poppler |
 | justfile with rootdir / prefix / cargo-target-dir | follows; `check` is `-D warnings` | follows; install wires nothing up | follows |
 | Nested `data/justfile`, vendoring recipes | skipped — nothing packages it yet | follows | follows |

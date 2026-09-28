@@ -2,6 +2,7 @@
 name = "grabit"
 version = "1.1.0"
 edition = "2024"
+rust-version = "1.98.1"
 description = "Selection-triggered actions for Wayland desktops"
 repository = "https://github.com/Magnetar-OS/grabit"
 homepage = "https://github.com/Magnetar-OS/grabit"
