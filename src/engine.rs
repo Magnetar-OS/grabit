@@ -5,6 +5,7 @@
 //! Both front-ends (the layer-shell popup and the GNOME Shell bridge) drive
 //! this. Nothing here knows how the bar is drawn.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use anyhow::{Context, Result};
@@ -34,7 +35,9 @@ pub struct Button {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Feedback {
     /// Show this text in the bar, titled with the action that produced it.
-    Result { title: String, body: String },
+    /// `ticket` is the one [`Engine::invoke`] returned for the invocation, so
+    /// a front-end can tell a result for its current bar from a late one.
+    Result { ticket: u64, title: String, body: String },
 }
 
 struct Inner {
@@ -46,6 +49,8 @@ struct Inner {
     /// button pass needs it on every selection.
     can_inject: bool,
     feedback: async_channel::Sender<Feedback>,
+    /// The last ticket handed out by `invoke`.
+    tickets: AtomicU64,
 }
 
 #[derive(Clone)]
@@ -63,6 +68,7 @@ impl Engine {
             injector: Mutex::new(injector),
             can_inject,
             feedback,
+            tickets: AtomicU64::new(0),
         }))
     }
 
@@ -136,12 +142,14 @@ impl Engine {
     /// Run the action with `id` against the selection.
     ///
     /// Returns immediately: the action runs on a worker thread so a slow command
-    /// cannot freeze the popup or the compositor's view of our surface.
-    pub fn invoke(&self, id: &str, grab: Grab) {
+    /// cannot freeze the popup or the compositor's view of our surface. The
+    /// returned ticket is carried by any [`Feedback`] the invocation produces.
+    pub fn invoke(&self, id: &str, grab: Grab) -> u64 {
+        let ticket = self.0.tickets.fetch_add(1, Ordering::Relaxed) + 1;
         if id == INSTALL_ID {
             let this = self.clone();
             spawn_worker(id, move || this.install(&grab.text));
-            return;
+            return ticket;
         }
 
         let Some(action) = self
@@ -155,7 +163,7 @@ impl Engine {
             .cloned()
         else {
             log::warn!("no action with id `{id}`");
-            return;
+            return ticket;
         };
 
         let this = self.clone();
@@ -168,7 +176,7 @@ impl Engine {
                         &action,
                         &Expansion { grab: &grab, class: &class, options: &action.spec.options },
                     )
-                    .and_then(|o| this.apply(&action.spec.title, o))
+                    .and_then(|o| this.apply(ticket, &action.spec.title, o))
                 }
             };
             match outcome {
@@ -182,6 +190,7 @@ impl Engine {
                 }
             }
         });
+        ticket
     }
 
     fn run_builtin(&self, builtin: Builtin, grab: &Grab) -> Result<()> {
@@ -203,7 +212,7 @@ impl Engine {
         keystroke(injector)
     }
 
-    fn apply(&self, title: &str, outcome: Outcome) -> Result<()> {
+    fn apply(&self, ticket: u64, title: &str, outcome: Outcome) -> Result<()> {
         match outcome {
             Outcome::Nothing => Ok(()),
             Outcome::Clipboard(text) => clipboard::set(&text),
@@ -221,7 +230,7 @@ impl Engine {
                 injector.paste().context("pasting the replacement text")
             }
             Outcome::Show(body) => {
-                let feedback = Feedback::Result { title: title.to_owned(), body };
+                let feedback = Feedback::Result { ticket, title: title.to_owned(), body };
                 self.0
                     .feedback
                     .send_blocking(feedback)

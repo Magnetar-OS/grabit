@@ -51,6 +51,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Cut, Paste and replacing actions chosen from a bar raised with
   `grabit show` act on the application again. The keystroke was sent while
   the bar still held keyboard focus, so it could land in the bar instead.
+- A slow action that shows its result in the bar no longer takes over a newer
+  bar. If you selected something else before it finished, its result is
+  dropped, as it already was once its own bar had closed.
 
 ## [1.1.0] - 2026-09-21
 

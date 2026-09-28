@@ -167,8 +167,9 @@ struct Grabit {
     keyboard: bool,
     /// A result being shown in place of the buttons: (action title, body).
     result: Option<(String, String)>,
-    /// An `after = "show"` action is running and the bar is waiting on it.
-    awaiting: bool,
+    /// The ticket of the `after = "show"` action this bar is waiting on. A
+    /// result carrying any other ticket belongs to an earlier bar.
+    awaiting: Option<u64>,
     /// Where the bar was asked to appear.
     anchor: Point,
     /// The bar's own size, once it has reported one.
@@ -209,7 +210,7 @@ impl Grabit {
             focused: None,
             keyboard: false,
             result: None,
-            awaiting: false,
+            awaiting: None,
             anchor: Point::ORIGIN,
             bar_size: Size::ZERO,
             output: Size::new(f32::MAX, f32::MAX),
@@ -229,7 +230,7 @@ impl Grabit {
         self.focused = None;
         self.keyboard = false;
         self.result = None;
-        self.awaiting = false;
+        self.awaiting = None;
         self.hovered = false;
         self.bar_size = Size::ZERO;
         self.anim = ANIM_STEPS;
@@ -538,8 +539,7 @@ impl Grabit {
         // action may paste and the keystroke must not race the bar's own
         // disappearance.
         if self.engine.action_after(&action) == Some(After::Show) {
-            self.awaiting = true;
-            self.engine.invoke(&action, self.grab.clone());
+            self.awaiting = Some(self.engine.invoke(&action, self.grab.clone()));
             return Task::none();
         }
         let grab = std::mem::take(&mut self.grab);
@@ -733,14 +733,15 @@ impl cosmic::Application for Grabit {
                 }
             }
 
-            Message::EngineFeedback(Feedback::Result { title, body }) => {
-                if self.bar.is_none() {
-                    // The bar is gone — the user moved on — so the result has
-                    // nowhere honest to appear.
-                    log::info!("result from “{title}” arrived after the bar closed");
+            Message::EngineFeedback(Feedback::Result { ticket, title, body }) => {
+                if self.bar.is_none() || self.awaiting != Some(ticket) {
+                    // The bar it was asked from is gone — the user moved on,
+                    // perhaps to a newer bar — so the result has nowhere
+                    // honest to appear.
+                    log::info!("result from “{title}” arrived after its bar closed");
                     return Task::none();
                 }
-                self.awaiting = false;
+                self.awaiting = None;
                 self.result = Some((title, body));
                 // A result is being read; give it a fresh lifetime. The new
                 // generation retires the timers armed for the buttons, which
@@ -981,13 +982,31 @@ mod tests {
     #[test]
     fn a_result_outlives_the_timeout_armed_for_the_buttons() {
         let (mut app, bar) = with_bar();
+        app.awaiting = Some(1);
         let placed = Message::Expired(app.epoch);
         let _ = app.update(Message::EngineFeedback(Feedback::Result {
+            ticket: 1,
             title: "Define".into(),
             body: "a word".into(),
         }));
         let _ = app.update(placed);
         assert_eq!(app.bar, Some(bar), "the result closed on the buttons' deadline");
+    }
+
+    /// A slow `after = "show"` action from an earlier bar must not replace
+    /// the buttons of the bar the user is looking at now.
+    #[test]
+    fn a_result_from_an_earlier_bar_is_not_shown_in_a_newer_one() {
+        let (mut app, bar) = with_bar();
+        app.awaiting = Some(2);
+        let _ = app.update(Message::EngineFeedback(Feedback::Result {
+            ticket: 1,
+            title: "Define".into(),
+            body: "an older word".into(),
+        }));
+        assert_eq!(app.result, None, "a late result took over a newer bar");
+        assert_eq!(app.bar, Some(bar));
+        assert_eq!(app.awaiting, Some(2), "the bar stopped waiting for its own result");
     }
 
     const OUTPUT: Size = Size { width: 1920.0, height: 1080.0 };

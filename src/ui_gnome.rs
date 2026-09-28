@@ -161,6 +161,9 @@ pub fn run(
         // The selection the visible bar acts on. Single-threaded runtime, so a
         // plain local is enough.
         let mut showing = Grab::default();
+        // The ticket of the last invocation from the visible bar; a result
+        // with any other ticket belongs to a bar that has since been replaced.
+        let mut awaiting: Option<u64> = None;
 
         loop {
             tokio::select! {
@@ -172,12 +175,14 @@ pub fn run(
                             continue;
                         }
                         showing = grab;
+                        awaiting = None;
                         if let Err(e) = show_popup(&connection, &buttons) {
                             log::error!("{e:#}");
                         }
                     }
                     Settled::Cleared => {
                         showing = Grab::default();
+                        awaiting = None;
                         if let Err(e) = hide_popup(&connection) {
                             log::warn!("{e:#}");
                         }
@@ -185,12 +190,14 @@ pub fn run(
                 },
 
                 Ok(id) = action_rx.recv() => {
-                    engine.invoke(&id, std::mem::take(&mut showing));
+                    awaiting = Some(engine.invoke(&id, std::mem::take(&mut showing)));
                 }
 
                 Ok(feedback) = feedback.recv() => match feedback {
-                    Feedback::Result { title, body } => {
-                        if version >= 2 {
+                    Feedback::Result { ticket, title, body } => {
+                        if awaiting != Some(ticket) {
+                            log::info!("result from “{title}” arrived after its bar closed");
+                        } else if version >= 2 {
                             if let Err(e) = show_result(&connection, &title, &body) {
                                 log::error!("{e:#}");
                             }
@@ -209,6 +216,7 @@ pub fn run(
                         {
                             let buttons = engine.buttons(&text);
                             showing = Grab::text(text);
+                            awaiting = None;
                             if let Err(e) = show_popup(&connection, &buttons) {
                                 log::error!("{e:#}");
                             }
