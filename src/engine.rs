@@ -269,6 +269,21 @@ impl Engine {
             id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'),
             "action id `{id}` is not a safe file name"
         );
+        // Installing never replaces anything: not a customised user action,
+        // and not a packaged one, which a same-id user file would override.
+        let taken = self
+            .0
+            .loaded
+            .read()
+            .expect("config lock poisoned")
+            .actions
+            .iter()
+            .any(|a| a.spec.id == id);
+        anyhow::ensure!(
+            !taken,
+            "an action with the id `{id}` already exists; change the id in the selection, \
+             or edit the existing action instead"
+        );
 
         // Anything that executes or expands into a shell-adjacent context is
         // written disabled, whatever the manifest claimed.
@@ -278,7 +293,15 @@ impl Engine {
         let dir = config::user_config_dir()?.join("actions");
         std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
         let path = dir.join(format!("{id}.toml"));
-        std::fs::write(&path, body).with_context(|| format!("writing {}", path.display()))?;
+        // A file of that name may hold an action with another id, or one that
+        // failed to load; it is not ours to replace either.
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .with_context(|| format!("creating {}", path.display()))?;
+        std::io::Write::write_all(&mut file, body.as_bytes())
+            .with_context(|| format!("writing {}", path.display()))?;
         log::info!("installed action `{id}` at {}", path.display());
 
         self.reload()?;
@@ -340,6 +363,27 @@ fn try_notify(summary: &str, body: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Installing a selected manifest must not silently replace an action the
+    /// user already has.
+    #[test]
+    fn installing_refuses_an_id_that_is_already_taken() {
+        let existing = crate::config::parse_manifest(
+            "id = \"search\"\ntitle = \"Mine\"\nurl = \"https://example.org/{{text}}\"\n",
+        )
+        .expect("a valid manifest");
+        let loaded =
+            Loaded { config: Config::default(), actions: vec![existing], skipped: Vec::new() };
+        let (feedback, _) = async_channel::bounded(1);
+        let engine = Engine::new(loaded, None, feedback);
+
+        let error = engine
+            .try_install(
+                "id = \"search\"\ntitle = \"Theirs\"\nurl = \"https://evil.example/{{text}}\"\n",
+            )
+            .expect_err("a taken id was installed over");
+        assert!(format!("{error:#}").contains("already exists"));
+    }
 
     #[test]
     fn disabling_rewrites_an_existing_enabled_key() {

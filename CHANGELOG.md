@@ -59,6 +59,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   of leaving it up to act on text that is no longer selected.
 - GNOME: `grabit show` respects excluded applications, as selecting with the
   mouse already did.
+- Installing an action from a selection no longer replaces an existing action
+  with the same id, or an existing file with the same name. It stops and says
+  so; change the id in the selection or edit the existing action.
 
 ## [1.1.0] - 2026-09-21
 
