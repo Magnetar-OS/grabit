@@ -24,7 +24,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   earlier point in the drag, finishing last, was treated as the selection being
   cleared.
 - Moving the pointer off the bar and back onto it no longer closes the bar
-  under the pointer.
+  under the pointer, and a result shown in the bar stays up for the full
+  `timeout_ms` instead of closing on the deadline armed for the buttons.
 - A selected action manifest that declares `[options]` and runs a command is
   now installed disabled and loadable. The `enabled = false` line was appended
   inside the last options table, so the file failed to load.

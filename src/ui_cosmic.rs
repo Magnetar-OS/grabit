@@ -177,8 +177,9 @@ struct Grabit {
     /// How many times the pointer has entered the bar. A dismissal armed by
     /// a leave carries the count it saw, so coming back makes it stale.
     entries: u64,
-    /// Bumped whenever the popup is torn down, so timers armed for an older
-    /// popup can tell that they are stale.
+    /// Bumped whenever the popup is torn down, and when a result replaces its
+    /// buttons, so timers armed for an older popup can tell that they are
+    /// stale.
     epoch: u64,
 }
 
@@ -719,7 +720,10 @@ impl cosmic::Application for Grabit {
                 }
                 self.awaiting = false;
                 self.result = Some((title, body));
-                // A result is being read; give it a fresh lifetime.
+                // A result is being read; give it a fresh lifetime. The new
+                // generation retires the timers armed for the buttons, which
+                // would otherwise close the result on the buttons' deadline.
+                self.epoch = self.epoch.wrapping_add(1);
                 let timeout = self.engine.config().popup.timeout_ms;
                 let epoch = self.epoch;
                 if timeout > 0 {
@@ -945,6 +949,20 @@ mod tests {
         let _ = app.update(Message::Hover(bar, true));
         let _ = app.update(armed);
         assert_eq!(app.bar, Some(bar), "the bar was dismissed while the pointer was on it");
+    }
+
+    /// A result arriving late gets `timeout_ms` of its own, not whatever was
+    /// left of the button bar's.
+    #[test]
+    fn a_result_outlives_the_timeout_armed_for_the_buttons() {
+        let (mut app, bar) = with_bar();
+        let placed = Message::Expired(app.epoch);
+        let _ = app.update(Message::EngineFeedback(Feedback::Result {
+            title: "Define".into(),
+            body: "a word".into(),
+        }));
+        let _ = app.update(placed);
+        assert_eq!(app.bar, Some(bar), "the result closed on the buttons' deadline");
     }
 
     const OUTPUT: Size = Size { width: 1920.0, height: 1080.0 };
