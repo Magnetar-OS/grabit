@@ -22,12 +22,16 @@ layer-shell popup on cosmic-comp/KWin/wlroots, the GNOME Shell extension
 front-end, drop-in TOML actions with regex matching and `url`/`exec` forms,
 placeholder expansion, `copy`/`replace` output handling, paste via
 `zwp_virtual_keyboard_v1`, D-Bus control, `grabit doctor`, Fluent i18n with
-generated XDG metadata, the COSMIC `justfile` conventions.
+generated XDG metadata, the COSMIC `justfile` conventions. Also working: the
+settings window, cut and paste as bar actions, URL/email/path/phone detection,
+the inline result view, snippet installation, per-action options, paging past
+`max_actions`, per-app exclusion (COSMIC through `zcosmic_toplevel_info_v1`,
+KWin/wlroots through `zwlr_foreign_toplevel_manager_v1`, GNOME through the
+extension), HTML capture, deb/rpm/Arch packaging and CI.
 
-Not yet: most of PopClip's built-in intelligence, any GUI for configuration,
-per-app behavior, action overflow, packaging, CI, and the last layer of visual
-polish ([docs/cosmic-conventions.md] tracks the known gaps — spacing tokens
-chief among them).
+Not yet: the COSMIC applet, Shift-to-suppress outside GNOME, `[popup]` values
+on GNOME, and the last layer of visual polish ([docs/cosmic-conventions.md]
+tracks the known gaps).
 
 [docs/cosmic-conventions.md]: docs/cosmic-conventions.md
 
@@ -43,20 +47,20 @@ The target feature set, mapped to what Wayland allows.
 | Copy | Yes | — | done |
 | Search (configurable engine) | Yes (action) | — | done |
 | Open link | Yes (action) | — | done |
-| Cut | No | Yes — copy + injected `Delete` | M2 |
+| Cut | Yes (`builtin = "cut"`) | Yes — copy + injected `Delete` | done |
 | Paste over selection | Partial (`after = "replace"`) | Yes | done |
-| Paste as its own bar action | No | Yes — inject `Ctrl+V` | M2 |
-| URL / email / path / phone detection with contextual defaults | Regex per action only | Yes — a detection pass over the selection | M2 |
-| Dictionary / spelling lookup | No | Yes — packaged `exec` actions (hunspell, dictd) | M2 |
-| Inline result preview (e.g. translation shown in the bar) | No | Yes — a second bar state | M2 |
+| Paste as its own bar action | Yes (`builtin = "paste"`) | Yes — inject `Ctrl+V` | done |
+| URL / email / path / phone detection with contextual defaults | Yes (`detects`, placeholders per kind) | Yes — a detection pass over the selection | done |
+| Dictionary / spelling lookup | Partial (Wiktionary `url` action) | Yes — packaged `exec` actions (hunspell, dictd) | M2 |
+| Inline result preview (e.g. translation shown in the bar) | Yes (`after = "show"`) | Yes — a second bar state | done |
 | Extension directory, one-file install | Drop-in TOML files | Yes by design | done |
-| Snippets — select an extension's text, get an install offer | No | Yes — detect a grabit manifest in the selection | M3 |
-| Per-extension options with a UI | No | Yes | M3 |
-| Bar overflow / paging when actions exceed the width | Truncates at `max_actions` | Yes | M1 |
-| Excluded / per-app behavior | No | Compositor-dependent — toplevel-info protocols; the GNOME extension knows the focused app natively | M4 |
-| Modifier to suppress the bar (Shift in PopClip) | No | Yes — keyboard state via the seat | M2 |
-| Rich text / HTML capture | Plain text only | Where the source offers `text/html` through data-control | M4 |
-| Menu-bar app for settings | TOML only | Yes — settings window + COSMIC applet | M3 |
+| Snippets — select an extension's text, get an install offer | Yes (installs disabled if it can start anything) | Yes — detect a grabit manifest in the selection | done |
+| Per-extension options with a UI | Yes (`[options]`, settings window) | Yes | done |
+| Bar overflow / paging when actions exceed the width | Yes (pages of `max_actions`) | Yes | done |
+| Excluded / per-app behavior | Yes (`[applications] exclude`) | Compositor-dependent — toplevel-info protocols; the GNOME extension knows the focused app natively | done |
+| Modifier to suppress the bar (Shift in PopClip) | GNOME only | GNOME only — an unfocused Wayland client is never told the modifier state | — |
+| Rich text / HTML capture | Yes, where the source offers `text/html` | Where the source offers `text/html` through data-control | done |
+| Menu-bar app for settings | Settings window; no applet yet | Yes — settings window + COSMIC applet | M3 |
 | Appears without any mouse movement | No | **No** — compositors re-evaluate pointer focus on motion only; `grabit show` is the keyboard path | — |
 
 ---
