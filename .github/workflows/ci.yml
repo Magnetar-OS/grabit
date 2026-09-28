@@ -1,0 +1,40 @@
+# The gate `just check` runs locally, plus the formatting check, on every push
+# to main and every pull request. The toolchain comes from rust-toolchain.toml
+# — the workflow deliberately passes none, so a bump there is a bump here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt, tests, clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: System libraries the build needs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libxkbcommon-dev pkg-config
+
+      # rustup reads rust-toolchain.toml on the first cargo invocation and
+      # installs the pinned channel with its components.
+      - name: Show the pinned toolchain
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: extractions/setup-just@v4
+
+      - name: fmt
+        run: cargo fmt --all --check
+
+      # `just check` is the test suite and a clippy pass with warnings denied.
+      - name: check
+        run: just check --locked
