@@ -105,18 +105,32 @@ Since neither COSMIC nor most wlroots compositors implement the
 ```toml
 [popup]
 settle_ms = 140     # how long the selection must stop changing before the bar shows
-max_actions = 8
+max_actions = 8     # actions per page; more than that pages
 icon_size = 16
 offset_x = 12       # bar position relative to the pointer
 offset_y = 18
 dismiss_ms = 900    # hide this long after the pointer leaves the bar. 0 disables
 timeout_ms = 8000   # hide unconditionally after this long. 0 disables
+animate = true      # slide the bar into place instead of snapping it there
 
 [selection]
 min_length = 1
 max_length = 20000
 ignore_whitespace_only = true
+
+[applications]
+exclude = []        # app ids where the bar never appears, e.g. ["org.keepassxc.KeePassXC"]
 ```
+
+An `exclude` entry matches an app id exactly or by its last dot-separated
+segment, so `"firefox"` also matches `org.mozilla.firefox`. `grabit doctor`
+prints the id of the focused app. Exclusion needs the session to say which app
+is focused: COSMIC, KWin, wlroots compositors and the GNOME extension do.
+
+On GNOME, the shell extension draws the bar itself and uses fixed values for
+everything in `[popup]` except `settle_ms`: 8 actions per page, 16 px icons, a
+12 × 18 px offset, 900 ms and 8 s for dismissal and timeout, and no animation.
+`[selection]` and `[applications]` apply everywhere.
 
 ## Actions
 
@@ -212,6 +226,9 @@ After editing anything: `grabit reload`.
   monitoring.
 * `after = "replace"` needs key injection. Where that is missing the replacement
   still reaches the clipboard, and grabit says so rather than failing quietly.
+* Holding Shift while selecting keeps the bar away on GNOME only. The shell
+  extension can read the modifier state; on the other compositors no protocol
+  tells a client that does not have keyboard focus which keys are held.
 
 ## How the popup is positioned
 
