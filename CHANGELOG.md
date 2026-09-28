@@ -37,6 +37,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   inside the last options table, so the file failed to load.
 - "Open in file manager" opens `~/…` paths; `{{path}}` now expands the leading
   `~/` to the home directory, which an argv never does by itself.
+- The daemon no longer grows for as long as the session runs. Every selection
+  change — one per pointer motion during a drag — left its data-control offer
+  alive in grabit and in the compositor.
 
 ## [1.1.0] - 2026-09-21
 

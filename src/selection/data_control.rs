@@ -11,8 +11,9 @@
 //! [`crate::selection::shell`] instead.
 
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::io::Read;
-use std::os::fd::AsFd;
+use std::os::fd::{AsFd, BorrowedFd};
 
 use anyhow::{Context, Result};
 use wayland_client::backend::ObjectId;
@@ -54,7 +55,7 @@ pub fn run(tx: async_channel::Sender<Raw>) -> Result<()> {
         seat: None,
         ext_manager: None,
         wlr_manager: None,
-        offers: HashMap::new(),
+        offers: Offers::default(),
         generation: 0,
         bound: false,
         seen_initial: false,
@@ -75,8 +76,8 @@ struct State {
     seat: Option<wl_seat::WlSeat>,
     ext_manager: Option<ext::ext_data_control_manager_v1::ExtDataControlManagerV1>,
     wlr_manager: Option<wlr::zwlr_data_control_manager_v1::ZwlrDataControlManagerV1>,
-    /// Mime types advertised by each live offer.
-    offers: HashMap<ObjectId, HashSet<String>>,
+    /// Mime types advertised by each offer not yet used.
+    offers: Offers<ObjectId>,
     /// Incremented per selection so that a slow read from an old selection can
     /// be discarded instead of overwriting a newer one.
     generation: u64,
@@ -107,15 +108,37 @@ impl State {
         Ok(())
     }
 
-    /// Pick the best text mime type an offer advertises.
-    fn pick_mime(&self, offer: &ObjectId) -> Option<&'static str> {
-        let mimes = self.offers.get(offer)?;
-        TEXT_MIMES.iter().copied().find(|m| mimes.contains(*m))
-    }
-
-    /// Whether an offer also carries an HTML rendering of the selection.
-    fn offers_html(&self, offer: &ObjectId) -> bool {
-        self.offers.get(offer).is_some_and(|mimes| mimes.contains(HTML_MIME))
+    /// Act on a new primary selection, then destroy its offer.
+    ///
+    /// Every offer is used by exactly one selection event, and the protocol
+    /// leaves destroying it to the client: an offer kept alive after its
+    /// transfer is requested costs a server-side object per selection for as
+    /// long as the daemon runs. The pipes handed over in `receive` keep the
+    /// transfer going without it.
+    fn primary_selection<O: Proxy>(
+        &mut self,
+        conn: &Connection,
+        offer: Option<O>,
+        receive: impl Fn(&O, String, BorrowedFd<'_>),
+        destroy: impl FnOnce(&O),
+    ) {
+        let Some(offer) = offer else {
+            if std::mem::replace(&mut self.seen_initial, true) {
+                self.clear();
+            }
+            return;
+        };
+        let text = self.offers.take(&offer.id());
+        if !std::mem::replace(&mut self.seen_initial, true) {
+            log::debug!("ignoring the primary selection that predates startup");
+        } else if let Some(text) = text {
+            self.receive(conn, text.mime, text.html, |mime, fd| {
+                receive(&offer, mime.to_owned(), fd);
+            });
+        } else {
+            self.clear();
+        }
+        destroy(&offer);
     }
 
     /// Read an offer's contents on a worker thread and forward the selection.
@@ -194,6 +217,44 @@ impl State {
     }
 }
 
+/// The mime types each announced offer advertises, until a selection event
+/// uses the offer.
+struct Offers<K> {
+    by_id: HashMap<K, HashSet<String>>,
+}
+
+impl<K> Default for Offers<K> {
+    fn default() -> Self {
+        Self { by_id: HashMap::new() }
+    }
+}
+
+/// How to read an offer's text.
+#[derive(Debug, PartialEq, Eq)]
+struct TextChoice {
+    /// The best text mime type the offer advertises.
+    mime: &'static str,
+    /// Whether it also carries an HTML rendering of the selection.
+    html: bool,
+}
+
+impl<K: Hash + Eq> Offers<K> {
+    fn announce(&mut self, id: K) {
+        self.by_id.insert(id, HashSet::new());
+    }
+
+    fn advertise(&mut self, id: K, mime: String) {
+        self.by_id.entry(id).or_default().insert(mime);
+    }
+
+    /// Forget an offer, returning how to read its text, if it has any.
+    fn take(&mut self, id: &K) -> Option<TextChoice> {
+        let mimes = self.by_id.remove(id)?;
+        let mime = TEXT_MIMES.iter().copied().find(|m| mimes.contains(*m))?;
+        Some(TextChoice { mime, html: mimes.contains(HTML_MIME) })
+    }
+}
+
 impl Dispatch<wl_registry::WlRegistry, ()> for State {
     fn event(
         state: &mut Self,
@@ -269,32 +330,16 @@ impl Dispatch<ext::ext_data_control_device_v1::ExtDataControlDeviceV1, ()> for S
     ) {
         use ext::ext_data_control_device_v1::Event;
         match event {
-            Event::DataOffer { id } => {
-                state.offers.insert(id.id(), HashSet::new());
-            }
-            Event::PrimarySelection { id } => {
-                if !std::mem::replace(&mut state.seen_initial, true) {
-                    log::debug!("ignoring the primary selection that predates startup");
-                    if let Some(offer) = id {
-                        state.offers.remove(&offer.id());
-                        offer.destroy();
-                    }
-                    return;
-                }
-                match id.as_ref().and_then(|offer| state.pick_mime(&offer.id())) {
-                    Some(mime) => {
-                        let offer = id.expect("mime came from this offer");
-                        let want_html = state.offers_html(&offer.id());
-                        state.receive(conn, mime, want_html, |mime, fd| {
-                            offer.receive(mime.to_owned(), fd);
-                        });
-                    }
-                    None => state.clear(),
-                }
-            }
+            Event::DataOffer { id } => state.offers.announce(id.id()),
+            Event::PrimarySelection { id } => state.primary_selection(
+                conn,
+                id,
+                |offer, mime, fd| offer.receive(mime, fd),
+                |offer| offer.destroy(),
+            ),
             Event::Selection { id: Some(offer) } => {
                 // Not used, but the offer must be destroyed or it leaks.
-                state.offers.remove(&offer.id());
+                state.offers.take(&offer.id());
                 offer.destroy();
             }
             Event::Finished => log::warn!("the compositor revoked our data-control device"),
@@ -319,31 +364,15 @@ impl Dispatch<wlr::zwlr_data_control_device_v1::ZwlrDataControlDeviceV1, ()> for
     ) {
         use wlr::zwlr_data_control_device_v1::Event;
         match event {
-            Event::DataOffer { id } => {
-                state.offers.insert(id.id(), HashSet::new());
-            }
-            Event::PrimarySelection { id } => {
-                if !std::mem::replace(&mut state.seen_initial, true) {
-                    log::debug!("ignoring the primary selection that predates startup");
-                    if let Some(offer) = id {
-                        state.offers.remove(&offer.id());
-                        offer.destroy();
-                    }
-                    return;
-                }
-                match id.as_ref().and_then(|offer| state.pick_mime(&offer.id())) {
-                    Some(mime) => {
-                        let offer = id.expect("mime came from this offer");
-                        let want_html = state.offers_html(&offer.id());
-                        state.receive(conn, mime, want_html, |mime, fd| {
-                            offer.receive(mime.to_owned(), fd);
-                        });
-                    }
-                    None => state.clear(),
-                }
-            }
+            Event::DataOffer { id } => state.offers.announce(id.id()),
+            Event::PrimarySelection { id } => state.primary_selection(
+                conn,
+                id,
+                |offer, mime, fd| offer.receive(mime, fd),
+                |offer| offer.destroy(),
+            ),
             Event::Selection { id: Some(offer) } => {
-                state.offers.remove(&offer.id());
+                state.offers.take(&offer.id());
                 offer.destroy();
             }
             Event::Finished => log::warn!("the compositor revoked our data-control device"),
@@ -367,7 +396,7 @@ impl Dispatch<ext::ext_data_control_offer_v1::ExtDataControlOfferV1, ()> for Sta
         _: &QueueHandle<Self>,
     ) {
         if let ext::ext_data_control_offer_v1::Event::Offer { mime_type } = event {
-            state.offers.entry(offer.id()).or_default().insert(mime_type);
+            state.offers.advertise(offer.id(), mime_type);
         }
     }
 }
@@ -382,7 +411,40 @@ impl Dispatch<wlr::zwlr_data_control_offer_v1::ZwlrDataControlOfferV1, ()> for S
         _: &QueueHandle<Self>,
     ) {
         if let wlr::zwlr_data_control_offer_v1::Event::Offer { mime_type } = event {
-            state.offers.entry(offer.id()).or_default().insert(mime_type);
+            state.offers.advertise(offer.id(), mime_type);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn offer(offers: &mut Offers<u32>, id: u32, mimes: &[&str]) {
+        offers.announce(id);
+        for mime in mimes {
+            offers.advertise(id, (*mime).to_owned());
+        }
+    }
+
+    /// One offer arrives per selection change — per pointer motion during a
+    /// drag — for the whole session, so a used offer must not stay behind.
+    #[test]
+    fn a_used_offer_is_forgotten() {
+        let mut offers = Offers::default();
+        offer(&mut offers, 1, &["text/html", "UTF8_STRING", "text/plain;charset=utf-8"]);
+        assert_eq!(
+            offers.take(&1),
+            Some(TextChoice { mime: "text/plain;charset=utf-8", html: true })
+        );
+        assert!(offers.by_id.is_empty());
+    }
+
+    #[test]
+    fn an_offer_without_text_is_forgotten_too() {
+        let mut offers = Offers::default();
+        offer(&mut offers, 1, &["image/png"]);
+        assert_eq!(offers.take(&1), None);
+        assert!(offers.by_id.is_empty());
     }
 }
