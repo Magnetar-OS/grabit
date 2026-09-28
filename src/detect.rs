@@ -17,8 +17,9 @@ pub struct Capabilities {
     pub layer_shell: bool,
     /// Keystrokes can be synthesised, which `after = "replace"` needs.
     pub virtual_keyboard: bool,
-    /// The focused application can be identified, which per-app rules need.
-    pub foreign_toplevel: bool,
+    /// Where the focused application can be learned from, which per-app rules
+    /// need; `None` when nowhere.
+    pub per_app: Option<crate::focus::Source>,
 }
 
 impl Capabilities {
@@ -46,7 +47,9 @@ pub fn probe() -> Result<Capabilities> {
             || globals.has("zwlr_data_control_manager_v1", 2),
         layer_shell: globals.has("zwlr_layer_shell_v1", 1),
         virtual_keyboard: globals.has("zwp_virtual_keyboard_manager_v1", 1),
-        foreign_toplevel: globals.has("zwlr_foreign_toplevel_manager_v1", 1),
+        per_app: crate::focus::Source::pick(
+            globals.interfaces.iter().map(|(name, v)| (name.as_str(), *v)),
+        ),
     })
 }
 

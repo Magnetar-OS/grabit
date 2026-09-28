@@ -11,9 +11,11 @@ Wayland capabilities
   selection monitoring (data-control) : yes
   overlay placement (layer-shell)     : yes
   key injection (virtual-keyboard)    : yes
+  per-app rules (focused app)         : zcosmic_toplevel_info_v1
   GNOME Shell extension               : no
 
 front-end: layer-shell
+focused app id: com.system76.CosmicTerm
 ```
 
 ## Supported sessions

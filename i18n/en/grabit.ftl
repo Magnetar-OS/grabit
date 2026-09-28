@@ -51,12 +51,14 @@ doctor-capabilities = Wayland capabilities
 doctor-selection = selection monitoring (data-control)
 doctor-layer-shell = overlay placement (layer-shell)
 doctor-virtual-keyboard = key injection (virtual-keyboard)
-doctor-foreign-toplevel = per-app rules (foreign-toplevel)
+doctor-per-app = per-app rules (focused app)
 doctor-shell-extension = GNOME Shell extension
 doctor-frontend = front-end
 doctor-frontend-layer = layer-shell
 doctor-frontend-gnome = GNOME Shell extension
 doctor-frontend-none = none — grabit cannot run here
+doctor-focused = focused app id
+doctor-focused-unknown = unknown
 doctor-no-paste = note: actions with `after = "replace"` will copy but not paste
 doctor-config = config
 doctor-actions = actions

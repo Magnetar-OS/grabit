@@ -210,7 +210,10 @@ fn doctor() -> Result<()> {
         (fl!("doctor-selection"), yes_no(capabilities.data_control)),
         (fl!("doctor-layer-shell"), yes_no(capabilities.layer_shell)),
         (fl!("doctor-virtual-keyboard"), yes_no(capabilities.virtual_keyboard)),
-        (fl!("doctor-foreign-toplevel"), yes_no(capabilities.foreign_toplevel)),
+        (
+            fl!("doctor-per-app"),
+            capabilities.per_app.map_or_else(|| fl!("no"), |s| s.describe().to_owned()),
+        ),
         (fl!("doctor-shell-extension"), yes_no(gnome)),
     ];
     let width = rows.iter().map(|(label, _)| label.chars().count()).max().unwrap_or(0);
@@ -230,6 +233,24 @@ fn doctor() -> Result<()> {
         fl!("doctor-frontend-none")
     };
     println!("{}: {front_end}", fl!("doctor-frontend"));
+
+    // The app id the exclude list has to name; run from a terminal, it is the
+    // terminal's own.
+    if capabilities.per_app.is_some() {
+        match focus::spawn() {
+            Ok(focus) => {
+                // cosmic-comp sends activation on its next refresh rather than
+                // in reply to the request, so give it a moment to arrive.
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+                while focus.current().is_none() && std::time::Instant::now() < deadline {
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+                let app = focus.current().unwrap_or_else(|| fl!("doctor-focused-unknown"));
+                println!("{}: {app}", fl!("doctor-focused"));
+            }
+            Err(e) => println!("{}: {e:#}", fl!("doctor-focused")),
+        }
+    }
 
     if !capabilities.virtual_keyboard && !gnome {
         println!("{}", fl!("doctor-no-paste"));

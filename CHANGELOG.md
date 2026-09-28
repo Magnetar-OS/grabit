@@ -14,6 +14,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Excluded applications are honoured on COSMIC. The focused app was only read
+  from the wlroots foreign-toplevel protocol, which cosmic-comp does not offer,
+  so on COSMIC the exclude list did nothing. grabit now follows focus through
+  `zcosmic_toplevel_info_v1` there, and an app that loses focus without another
+  gaining it no longer counts as focused. `grabit doctor` names the protocol in
+  use and prints the focused app's id — the id the exclude list has to match.
 - Selecting text no longer blurs the whole screen on COSMIC when the theme's
   frosted system interface is on. The invisible full-screen surface that waits
   for the pointer was being frosted like any other panel; it now opts out.
