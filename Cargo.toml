@@ -28,12 +28,12 @@ tokio = { version = "1", features = ["time", "rt"] }
 futures = "0.3"
 anyhow = "1.0.104"
 async-channel = "2.5.0"
-clap = { version = "4.6.6", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 dirs = "7.0.0"
 env_logger = "0.11.11"
 htmd = "0.5.5"
-log = "0.4.33"
-memfd = "0.6.5"
+log = "0.4.34"
+memfd = "0.6.6"
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
 shell-words = "1.1.1"
@@ -43,7 +43,7 @@ wayland-client = "0.31.15"
 wayland-protocols = { version = "0.32.13", features = ["client", "staging"] }
 wayland-protocols-misc = { version = "0.3.12", features = ["client"] }
 wayland-protocols-wlr = { version = "0.3.12", features = ["client"] }
-wl-clipboard-rs = "0.9.3"
+wl-clipboard-rs = "0.9.4"
 zbus = { version = "5.19.0", default-features = false, features = ["blocking-api", "async-io"] }
 i18n-embed = { version = "0.16.0", features = ["fluent-system", "desktop-requester"] }
 i18n-embed-fl = "0.10.1"
