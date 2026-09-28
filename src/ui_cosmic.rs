@@ -769,20 +769,18 @@ impl cosmic::Application for Grabit {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        let config = self.engine.config();
-
         let feed = Feed {
             name: "",
             selections: self.selections.clone(),
             commands: self.commands.clone(),
             feedback: self.feedback.clone(),
-            config: config.selection.clone(),
-            settle: Duration::from_millis(config.popup.settle_ms),
+            engine: self.engine.clone(),
         };
 
         let selections =
             Subscription::run_with(Feed { name: "grabit-selections", ..feed.clone() }, |feed| {
-                selection::settled(feed.selections.clone(), feed.config.clone(), feed.settle)
+                let engine = feed.engine.clone();
+                selection::settled(feed.selections.clone(), move || engine.selection_limits())
                     .map(Message::Selection)
                     .boxed()
             });
@@ -860,17 +858,18 @@ fn ease_out_cubic(t: f32) -> f32 {
 ///
 /// `Subscription::run_with` identifies a subscription by hashing this and takes a
 /// plain function pointer, so the struct has to carry everything the stream needs
-/// and hash to something stable. Only the name participates: the channels are
-/// fixed for the lifetime of the process, and hashing them is neither possible
-/// nor meaningful.
+/// and hash to something stable. Only the name participates: the channels and
+/// the engine are fixed for the lifetime of the process, and hashing them is
+/// neither possible nor meaningful.
 #[derive(Clone)]
 struct Feed {
     name: &'static str,
     selections: async_channel::Receiver<Raw>,
     commands: async_channel::Receiver<Command>,
     feedback: async_channel::Receiver<Feedback>,
-    config: crate::config::Selection,
-    settle: Duration,
+    /// Where the selection limits are read from, live, so a reload reaches a
+    /// subscription that iced keeps running across it.
+    engine: Engine,
 }
 
 impl std::hash::Hash for Feed {

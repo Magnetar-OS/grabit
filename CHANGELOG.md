@@ -17,6 +17,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Selecting text no longer blurs the whole screen on COSMIC when the theme's
   frosted system interface is on. The invisible full-screen surface that waits
   for the pointer was being frosted like any other panel; it now opts out.
+- `grabit reload`, and every change made in the settings window, now applies
+  the `[selection]` limits and `settle_ms` to the next selection. Both were
+  read once at startup, so they only took effect after a restart.
 - A drag selection no longer occasionally shows no bar: a slow read of an
   earlier point in the drag, finishing last, was treated as the selection being
   cleared.

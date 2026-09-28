@@ -10,8 +10,6 @@
 //!
 //! The extension exports `org.grabit.Shell`; see `gnome-extension/`.
 
-use std::time::Duration;
-
 use anyhow::{Context, Result};
 use futures::StreamExt;
 
@@ -150,18 +148,15 @@ pub fn run(
         }
     })?;
 
-    let config = engine.config();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()
         .context("starting the async runtime")?;
 
     runtime.block_on(async move {
-        let mut selections = Box::pin(selection::settled(
-            selection_rx,
-            config.selection.clone(),
-            Duration::from_millis(config.popup.settle_ms),
-        ));
+        let limits = engine.clone();
+        let mut selections =
+            Box::pin(selection::settled(selection_rx, move || limits.selection_limits()));
 
         // The selection the visible bar acts on. Single-threaded runtime, so a
         // plain local is enough.

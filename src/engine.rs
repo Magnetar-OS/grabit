@@ -70,6 +70,14 @@ impl Engine {
         self.0.loaded.read().expect("config lock poisoned").config.clone()
     }
 
+    /// What decides whether a selection is worth a bar, and how long it must
+    /// hold still first — read live, so a reload applies to the next one.
+    pub fn selection_limits(&self) -> (config::Selection, std::time::Duration) {
+        let loaded = self.0.loaded.read().expect("config lock poisoned");
+        let config = &loaded.config;
+        (config.selection.clone(), std::time::Duration::from_millis(config.popup.settle_ms))
+    }
+
     /// Re-read config and actions from disk.
     pub fn reload(&self) -> Result<()> {
         let fresh = config::load().context("reloading configuration")?;

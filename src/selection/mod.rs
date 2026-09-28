@@ -66,35 +66,41 @@ pub fn is_interesting(text: &str, cfg: &SelectionConfig) -> bool {
 ///
 /// Executor-agnostic on purpose: both front-ends consume this, and they run on
 /// different runtimes.
-pub fn settled(
+///
+/// `limits` is asked for the `[selection]` limits and the settle time once per
+/// selection rather than captured at start, so a `grabit reload` — which the
+/// settings window sends after every change — applies to the next selection.
+pub fn settled<L>(
     rx: async_channel::Receiver<Raw>,
-    cfg: SelectionConfig,
-    settle: Duration,
-) -> impl Stream<Item = Settled> + Send + 'static {
-    struct State {
+    limits: L,
+) -> impl Stream<Item = Settled> + Send + 'static
+where
+    L: Fn() -> (SelectionConfig, Duration) + Send + 'static,
+{
+    struct State<L> {
         rx: async_channel::Receiver<Raw>,
-        cfg: SelectionConfig,
-        settle: Duration,
+        limits: L,
         /// Highest generation seen, so a slow transfer belonging to an older
         /// selection cannot overwrite a newer one.
         newest: u64,
     }
 
-    futures::stream::unfold(State { rx, cfg, settle, newest: 0 }, |mut state| async move {
+    futures::stream::unfold(State { rx, limits, newest: 0 }, |mut state| async move {
         let first = state.rx.recv().await.ok()?;
+        let (cfg, settle) = (state.limits)();
         let mut pending = Grab::default();
         fold(&mut pending, first, &mut state.newest);
 
         // Keep swallowing events until the stream goes quiet for `settle`.
         loop {
-            match tokio::time::timeout(state.settle, state.rx.recv()).await {
+            match tokio::time::timeout(settle, state.rx.recv()).await {
                 Err(_timed_out) => break,
                 Ok(Err(_closed)) => return None,
                 Ok(Ok(raw)) => fold(&mut pending, raw, &mut state.newest),
             }
         }
 
-        let event = if is_interesting(&pending.text, &state.cfg) {
+        let event = if is_interesting(&pending.text, &cfg) {
             Settled::Text(pending)
         } else {
             if !pending.text.is_empty() {
@@ -183,7 +189,7 @@ mod tests {
             for (generation, text) in [(1, "h"), (2, "he"), (3, "hello")] {
                 tx.send(Raw::Selection { generation, grab: Grab::text(text) }).await.unwrap();
             }
-            let mut stream = Box::pin(settled(rx, cfg(), Duration::from_millis(20)));
+            let mut stream = Box::pin(settled(rx, || (cfg(), Duration::from_millis(20))));
             assert_eq!(stream.next().await, Some(Settled::Text(Grab::text("hello"))));
         });
     }
@@ -202,8 +208,35 @@ mod tests {
             let (tx, rx) = async_channel::unbounded();
             tx.send(Raw::Selection { generation: 2, grab: Grab::text("hello") }).await.unwrap();
             tx.send(Raw::Selection { generation: 1, grab: Grab::text("he") }).await.unwrap();
-            let mut stream = Box::pin(settled(rx, cfg(), Duration::from_millis(20)));
+            let mut stream = Box::pin(settled(rx, || (cfg(), Duration::from_millis(20))));
             assert_eq!(stream.next().await, Some(Settled::Text(Grab::text("hello"))));
+        });
+    }
+
+    /// The settings window writes `[selection]` and pokes `grabit reload`;
+    /// the next selection has to be judged by the new limits, not by the ones
+    /// the daemon started with.
+    #[test]
+    fn limits_changed_after_start_apply_to_the_next_selection() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("building a test runtime");
+
+        runtime.block_on(async {
+            let limits = std::sync::Arc::new(std::sync::Mutex::new(cfg()));
+            let source = std::sync::Arc::clone(&limits);
+            let (tx, rx) = async_channel::unbounded();
+            let mut stream = Box::pin(settled(rx, move || {
+                (source.lock().unwrap().clone(), Duration::from_millis(20))
+            }));
+
+            tx.send(Raw::Selection { generation: 1, grab: Grab::text("hello") }).await.unwrap();
+            assert_eq!(stream.next().await, Some(Settled::Text(Grab::text("hello"))));
+
+            limits.lock().unwrap().max_length = 3;
+            tx.send(Raw::Selection { generation: 2, grab: Grab::text("hello") }).await.unwrap();
+            assert_eq!(stream.next().await, Some(Settled::Cleared));
         });
     }
 
@@ -217,7 +250,7 @@ mod tests {
         runtime.block_on(async {
             let (tx, rx) = async_channel::unbounded();
             tx.send(Raw::Cleared).await.unwrap();
-            let mut stream = Box::pin(settled(rx, cfg(), Duration::from_millis(20)));
+            let mut stream = Box::pin(settled(rx, || (cfg(), Duration::from_millis(20))));
             assert_eq!(stream.next().await, Some(Settled::Cleared));
         });
     }
