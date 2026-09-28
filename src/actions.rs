@@ -71,6 +71,10 @@ fn percent_encode(s: &str) -> String {
 /// the template's value would break it. An action guarded by `detects` always
 /// has its value; without the guard an undetected kind expands to nothing.
 ///
+/// `{{path}}` is the one detected value that is rewritten: a leading `~/`
+/// becomes the home directory, because an argv has no shell to expand it and
+/// the program on the other end would look for a directory named `~`.
+///
 /// `{{option:NAME}}` expands to the action's own option — the value chosen in
 /// the settings window, or the option's `default` until one is. It is encoded
 /// in `url_mode` exactly as `{{text}}` is: an option holds a value, never
@@ -110,7 +114,7 @@ pub fn expand(template: &str, ctx: &Expansion<'_>, url_mode: bool) -> String {
             "text_line" => plain(first_line),
             "url" => detected(ctx.class.url.as_deref(), name),
             "email" => detected(ctx.class.email.as_deref(), name),
-            "path" => detected(ctx.class.path.as_deref(), name),
+            "path" => detected(ctx.class.path.as_deref().map(home_expanded).as_deref(), name),
             "phone" => detected(ctx.class.phone.as_deref(), name),
             "color" => detected(ctx.class.color.as_deref(), name),
             // The source's own HTML rendering of the selection, when it offered
@@ -145,6 +149,15 @@ pub fn expand(template: &str, ctx: &Expansion<'_>, url_mode: bool) -> String {
     }
     out.push_str(rest);
     out
+}
+
+/// `~/rest` as an absolute path under the home directory; anything else, and
+/// a session with no home directory, unchanged.
+fn home_expanded(path: &str) -> String {
+    match (path.strip_prefix("~/"), dirs::home_dir()) {
+        (Some(rest), Some(home)) => home.join(rest).display().to_string(),
+        _ => path.to_owned(),
+    }
 }
 
 /// Run `action` against the selection in `ctx`.
@@ -340,6 +353,17 @@ mod tests {
         assert_eq!(x("{{url}}", "https://a.com/x?y=1.", true), "https://a.com/x?y=1");
         assert_eq!(x("mailto:{{email}}", "kim@example.com,", true), "mailto:kim@example.com");
         assert_eq!(x("tel:{{phone}}", "+30 210 123 4567", true), "tel:+302101234567");
+    }
+
+    /// `{{path}}` goes into an argv, where no shell expands `~`; the packaged
+    /// open-path action hands it to `xdg-open`, which would look for a
+    /// directory literally named `~`.
+    #[test]
+    fn a_home_relative_path_expands_to_an_absolute_one() {
+        let home = dirs::home_dir().expect("a home directory");
+        let expected = home.join("notes.txt").display().to_string();
+        assert_eq!(x("{{path}}", "~/notes.txt", false), expected);
+        assert_eq!(x("{{path}}", "/etc/hosts", false), "/etc/hosts");
     }
 
     #[test]

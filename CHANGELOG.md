@@ -17,6 +17,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Selecting text no longer blurs the whole screen on COSMIC when the theme's
   frosted system interface is on. The invisible full-screen surface that waits
   for the pointer was being frosted like any other panel; it now opts out.
+- "Open in file manager" opens `~/…` paths; `{{path}}` now expands the leading
+  `~/` to the home directory, which an argv never does by itself.
 
 ## [1.1.0] - 2026-09-21
 
