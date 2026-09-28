@@ -54,6 +54,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A slow action that shows its result in the bar no longer takes over a newer
   bar. If you selected something else before it finished, its result is
   dropped, as it already was once its own bar had closed.
+- GNOME: selecting text no action applies to now closes the bar left over
+  from the previous selection, as it does on the layer-shell front-end, instead
+  of leaving it up to act on text that is no longer selected.
 
 ## [1.1.0] - 2026-09-21
 

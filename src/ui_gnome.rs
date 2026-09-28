@@ -171,7 +171,14 @@ pub fn run(
                     Settled::Text(grab) => {
                         let buttons = engine.buttons(&grab.text);
                         if buttons.is_empty() {
+                            // The bar showing is for an older selection; leaving
+                            // it up would act on text that is no longer selected.
                             log::debug!("no action matches this selection");
+                            showing = Grab::default();
+                            awaiting = None;
+                            if let Err(e) = hide_popup(&connection) {
+                                log::warn!("{e:#}");
+                            }
                             continue;
                         }
                         showing = grab;
