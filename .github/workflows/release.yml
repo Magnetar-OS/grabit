@@ -3,9 +3,10 @@
 # @entro314labs/release-kit) writes the version, rolls the changelog, tags
 # and pushes. See the kit README for the full contract.
 #
-# TODO once the kit repo is published: pin every kit reference below to a
-# reviewed commit SHA (@<sha>) instead of @main — the workflows run with
-# contents:write and the signing key.
+# Every kit reference is pinned to a reviewed commit rather than @main: the
+# workflows run with contents:write and the signing and publishing secrets, so
+# a push to the kit's main must not change what runs with them. Move the pin
+# deliberately, to a commit that has been read.
 name: Release
 
 on:
@@ -30,7 +31,7 @@ concurrency:
 
 jobs:
   release:
-    uses: entro314-labs/linux-release-kit/.github/workflows/release.yml@main
+    uses: entro314-labs/linux-release-kit/.github/workflows/release.yml@4887d34c0d34bbe50c51d8b47c68d0a030da9450 # main, 2026-09-29
     permissions:
       contents: write
     with:
@@ -67,7 +68,7 @@ jobs:
   # shared across all entro314-labs apps.
   arch-repo:
     needs: release
-    uses: entro314-labs/linux-release-kit/.github/workflows/arch-repo.yml@main
+    uses: entro314-labs/linux-release-kit/.github/workflows/arch-repo.yml@4887d34c0d34bbe50c51d8b47c68d0a030da9450 # main, 2026-09-29
     with:
       tag: ${{ inputs.tag || '' }}
       product_name: 'grabit'
