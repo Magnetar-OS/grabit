@@ -57,6 +57,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - GNOME: selecting text no action applies to now closes the bar left over
   from the previous selection, as it does on the layer-shell front-end, instead
   of leaving it up to act on text that is no longer selected.
+- GNOME: `grabit show` respects excluded applications, as selecting with the
+  mouse already did.
 
 ## [1.1.0] - 2026-09-21
 

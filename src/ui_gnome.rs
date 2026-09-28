@@ -99,8 +99,14 @@ pub fn run(
     let version = extension_version(&connection);
     log::info!("shell extension protocol version {version}");
 
+    // The app the extension last reported a selection in. The primary
+    // selection belongs to it, so `grabit show` — which reads that selection —
+    // is judged against the same exclusion.
+    let selection_app = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+
     if version >= 2 {
         let exclusions = engine.clone();
+        let reported_app = std::sync::Arc::clone(&selection_app);
         spawn_signal_relay(&connection, "SelectionChangedV2", move |message| {
             let (text, app): (String, String) = match message.body().deserialize() {
                 Ok(pair) => pair,
@@ -112,6 +118,7 @@ pub fn run(
             // An excluded app's selection must also take an existing bar down,
             // so it is reported as cleared rather than swallowed.
             let excluded = !app.is_empty() && exclusions.config().applications.is_excluded(&app);
+            *reported_app.lock().expect("selection app lock poisoned") = app;
             let event = if text.is_empty() || excluded {
                 Raw::Cleared
             } else {
@@ -218,6 +225,9 @@ pub fn run(
 
                 Ok(command) = commands.recv() => match command {
                     Command::Show => match crate::control::current_primary_selection() {
+                        Ok(_) if is_excluded(&engine, &selection_app) => {
+                            log::info!("the selection is in an excluded app");
+                        }
                         Ok(text)
                             if selection::is_interesting(&text, &engine.config().selection) =>
                         {
@@ -253,6 +263,12 @@ pub fn run(
     });
 
     Ok(())
+}
+
+/// Whether the app the last selection was made in is on the exclude list.
+fn is_excluded(engine: &Engine, app: &std::sync::Mutex<String>) -> bool {
+    let app = app.lock().expect("selection app lock poisoned");
+    !app.is_empty() && engine.config().applications.is_excluded(&app)
 }
 
 fn show_popup(
