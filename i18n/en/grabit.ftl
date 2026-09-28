@@ -35,6 +35,7 @@ settings-max-length = Maximum length
 settings-ignore-whitespace = Ignore whitespace-only selections
 settings-apps = Excluded applications
 settings-apps-hint = The bar never appears in these apps. App ids match exactly or by their last segment, so both “org.mozilla.firefox” and “firefox” work.
+settings-apps-unavailable = This session does not tell grabit which application is focused, so these rules have no effect here. `grabit doctor` shows what the session supports.
 settings-exclude-placeholder = App id…
 settings-exclude-add = Add
 settings-remove = Remove

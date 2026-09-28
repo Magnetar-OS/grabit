@@ -11,6 +11,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A "grabit Settings" entry in the applications menu. The settings window was
   only reachable as `grabit settings` from a terminal; the daemon's own entry
   is autostart-only and hidden.
+- The settings window says when the session cannot tell grabit which
+  application is focused, instead of offering an exclude list that would have
+  no effect there.
 
 ### Fixed
 

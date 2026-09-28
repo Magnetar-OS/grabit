@@ -58,6 +58,9 @@ struct App {
     config: Config,
     actions: Vec<Action>,
     exclude_input: String,
+    /// Whether this session can tell grabit which app is focused, without
+    /// which the exclude list has no effect.
+    per_app: bool,
     /// Half-typed free-text option values, keyed by action id and option name.
     ///
     /// A manifest write per keystroke would rewrite the file and poke the
@@ -197,23 +200,26 @@ impl App {
     fn applications_section(&self) -> Element<'_, Message> {
         let mut section = settings::section()
             .title(crate::fl!("settings-apps"))
-            .add(widget::text::caption(crate::fl!("settings-apps-hint")))
-            .add(
-                widget::row::with_capacity(2)
-                    .spacing(theme::spacing().space_xxs)
-                    .push(
-                        widget::text_input(
-                            crate::fl!("settings-exclude-placeholder"),
-                            &self.exclude_input,
-                        )
-                        .on_input(Message::ExcludeInput)
-                        .on_submit(|_| Message::ExcludeAdd),
+            .add(widget::text::caption(crate::fl!("settings-apps-hint")));
+        if !self.per_app {
+            section = section.add(widget::text::caption(crate::fl!("settings-apps-unavailable")));
+        }
+        section = section.add(
+            widget::row::with_capacity(2)
+                .spacing(theme::spacing().space_xxs)
+                .push(
+                    widget::text_input(
+                        crate::fl!("settings-exclude-placeholder"),
+                        &self.exclude_input,
                     )
-                    .push(
-                        widget::button::text(crate::fl!("settings-exclude-add"))
-                            .on_press(Message::ExcludeAdd),
-                    ),
-            );
+                    .on_input(Message::ExcludeInput)
+                    .on_submit(|_| Message::ExcludeAdd),
+                )
+                .push(
+                    widget::button::text(crate::fl!("settings-exclude-add"))
+                        .on_press(Message::ExcludeAdd),
+                ),
+        );
 
         for (index, entry) in self.config.applications.exclude.iter().enumerate() {
             section = section.add(settings::item(
@@ -350,6 +356,7 @@ impl cosmic::Application for App {
             config: loaded.config,
             actions: loaded.actions,
             exclude_input: String::new(),
+            per_app: per_app_available(),
             option_edits: BTreeMap::new(),
         };
         (app, Task::none())
@@ -494,6 +501,20 @@ impl cosmic::Application for App {
         }
         Task::none()
     }
+}
+
+/// Whether the daemon can learn the focused app in this session: from a
+/// toplevel protocol on the layer-shell front-end, or from the GNOME Shell
+/// extension, which reports it with each selection.
+fn per_app_available() -> bool {
+    let protocol = match crate::detect::probe() {
+        Ok(capabilities) => capabilities.per_app.is_some(),
+        Err(e) => {
+            log::debug!("probing the compositor: {e:#}");
+            false
+        }
+    };
+    protocol || crate::ui_gnome::is_available()
 }
 
 /// Write the `[popup]`, `[selection]` and `[applications]` tables into the
