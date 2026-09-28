@@ -260,6 +260,16 @@ impl Action {
 pub struct Loaded {
     pub config: Config,
     pub actions: Vec<Action>,
+    /// Action files that failed to load. Each was skipped so the rest still
+    /// load; they are listed so a broken drop-in is visible outside the log.
+    pub skipped: Vec<Skipped>,
+}
+
+/// An action file that could not be loaded, and why.
+#[derive(Debug, Clone)]
+pub struct Skipped {
+    pub path: PathBuf,
+    pub error: String,
 }
 
 /// `$XDG_CONFIG_HOME/grabit`, falling back to `~/.config/grabit`.
@@ -280,16 +290,19 @@ pub fn load() -> Result<Loaded> {
 
     // System actions first so that a user file with the same `id` replaces it.
     let mut by_id: BTreeMap<String, Action> = BTreeMap::new();
+    let mut skipped = Vec::new();
     for dir in [PathBuf::from(SYSTEM_DATA_DIR).join("actions"), user_dir.join("actions")] {
-        for action in load_actions_dir(&dir)? {
+        let (actions, failed) = load_actions_dir(&dir)?;
+        for action in actions {
             by_id.insert(action.spec.id.clone(), action);
         }
+        skipped.extend(failed);
     }
 
     let mut actions: Vec<Action> = by_id.into_values().collect();
     actions.sort_by(|a, b| a.spec.order.cmp(&b.spec.order).then_with(|| a.spec.id.cmp(&b.spec.id)));
 
-    Ok(Loaded { config, actions })
+    Ok(Loaded { config, actions, skipped })
 }
 
 fn load_config(path: &Path) -> Result<Config> {
@@ -303,27 +316,31 @@ fn load_config(path: &Path) -> Result<Config> {
 
 /// Read every `*.toml` in `dir`. A missing directory is not an error — most
 /// installs will have only one of the two action directories.
-fn load_actions_dir(dir: &Path) -> Result<Vec<Action>> {
+fn load_actions_dir(dir: &Path) -> Result<(Vec<Action>, Vec<Skipped>)> {
     let entries = match std::fs::read_dir(dir) {
         Ok(entries) => entries,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok((Vec::new(), Vec::new())),
         Err(e) => return Err(e).with_context(|| format!("reading {}", dir.display())),
     };
 
     let mut actions = Vec::new();
+    let mut skipped = Vec::new();
     for entry in entries {
         let path = entry.with_context(|| format!("reading {}", dir.display()))?.path();
         if path.extension().is_none_or(|e| e != "toml") {
             continue;
         }
         // One bad action file must not take down every other action, so parse
-        // errors are reported and skipped rather than propagated.
+        // errors are collected and skipped rather than propagated.
         match load_action(&path) {
             Ok(action) => actions.push(action),
-            Err(e) => log::error!("skipping action {}: {e:#}", path.display()),
+            Err(e) => {
+                log::error!("skipping action {}: {e:#}", path.display());
+                skipped.push(Skipped { path, error: format!("{e:#}") });
+            }
         }
     }
-    Ok(actions)
+    Ok((actions, skipped))
 }
 
 fn load_action(path: &Path) -> Result<Action> {
@@ -431,6 +448,28 @@ fn install_defaults(dir: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A broken drop-in is skipped so the others still load, and reported
+    /// rather than only logged.
+    #[test]
+    fn a_broken_action_file_is_skipped_and_reported() {
+        let dir = std::env::temp_dir().join(format!("grabit-skipped-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        std::fs::write(
+            dir.join("good.toml"),
+            "id = \"good\"\ntitle = \"Good\"\nurl = \"https://example.org/{{text}}\"\n",
+        )
+        .unwrap();
+        std::fs::write(dir.join("bad.toml"), "id = \"bad\"\ntitle = \"Bad\"\nurl = [\n").unwrap();
+        let loaded = load_actions_dir(&dir);
+        std::fs::remove_dir_all(&dir).expect("removing the scratch directory");
+
+        let (actions, skipped) = loaded.expect("the directory reads");
+        assert_eq!(actions.iter().map(|a| a.spec.id.as_str()).collect::<Vec<_>>(), ["good"]);
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].path.file_name().unwrap(), "bad.toml");
+        assert!(!skipped[0].error.is_empty());
+    }
 
     /// Every manifest grabit ships has to survive its own validation — a broken
     /// one would only surface on a fresh install, after release.

@@ -258,10 +258,26 @@ fn doctor() -> Result<()> {
 
     println!();
     println!("{}: {}", fl!("doctor-config"), config::user_config_dir()?.display());
-    let actions = match config::load() {
-        Ok(loaded) => fl!("doctor-actions-loaded", count = loaded.actions.len()),
-        Err(e) => fl!("doctor-actions-failed", error = format!("{e:#}")),
-    };
-    println!("{}: {actions}", fl!("doctor-actions"));
+    match config::load() {
+        Ok(loaded) => {
+            let count = loaded.actions.len();
+            println!("{}: {}", fl!("doctor-actions"), fl!("doctor-actions-loaded", count = count));
+            for skipped in &loaded.skipped {
+                println!(
+                    "  {}",
+                    fl!(
+                        "doctor-action-skipped",
+                        path = skipped.path.display().to_string(),
+                        error = skipped.error.as_str()
+                    )
+                );
+            }
+        }
+        Err(e) => println!(
+            "{}: {}",
+            fl!("doctor-actions"),
+            fl!("doctor-actions-failed", error = format!("{e:#}"))
+        ),
+    }
     Ok(())
 }

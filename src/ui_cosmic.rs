@@ -924,8 +924,11 @@ mod tests {
         let (_, commands) = async_channel::bounded(1);
         let (_, selections) = async_channel::bounded(1);
         let (feedback_tx, feedback) = async_channel::bounded(1);
-        let loaded =
-            crate::config::Loaded { config: crate::config::Config::default(), actions: Vec::new() };
+        let loaded = crate::config::Loaded {
+            config: crate::config::Config::default(),
+            actions: Vec::new(),
+            skipped: Vec::new(),
+        };
         let flags = Flags {
             engine: Engine::new(loaded, None, feedback_tx),
             commands,

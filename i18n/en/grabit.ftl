@@ -72,5 +72,6 @@ doctor-config = config
 doctor-actions = actions
 doctor-actions-loaded = { $count } loaded
 doctor-actions-failed = failed to load — { $error }
+doctor-action-skipped = skipped { $path }: { $error }
 yes = yes
 no = no

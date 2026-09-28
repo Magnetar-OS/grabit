@@ -58,6 +58,8 @@ struct App {
     core: Core,
     config: Config,
     actions: Vec<Action>,
+    /// Action files that failed to load, listed under the actions.
+    skipped: Vec<config::Skipped>,
     exclude_input: String,
     /// Whether this session can tell grabit which app is focused, without
     /// which the exclude list has no effect.
@@ -87,6 +89,7 @@ impl App {
             Ok(loaded) => {
                 self.config = loaded.config;
                 self.actions = loaded.actions;
+                self.skipped = loaded.skipped;
             }
             Err(e) => self.fail(crate::fl!("settings-error-reload"), &e),
         }
@@ -260,6 +263,13 @@ impl App {
                     .class(theme::Button::Icon)
                     .on_press(Message::OpenFolder),
             ));
+        for skipped in &self.skipped {
+            section = section.add(widget::text::caption(crate::fl!(
+                "doctor-action-skipped",
+                path = skipped.path.display().to_string(),
+                error = skipped.error.as_str()
+            )));
+        }
 
         let last = self.actions.len().saturating_sub(1);
         for (index, action) in self.actions.iter().enumerate() {
@@ -364,6 +374,7 @@ impl cosmic::Application for App {
             core,
             config: Config::default(),
             actions: Vec::new(),
+            skipped: Vec::new(),
             exclude_input: String::new(),
             per_app: per_app_available(),
             error: None,
