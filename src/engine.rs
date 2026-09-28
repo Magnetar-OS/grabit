@@ -256,7 +256,7 @@ impl Engine {
         // Anything that executes or expands into a shell-adjacent context is
         // written disabled, whatever the manifest claimed.
         let must_disable = action.spec.exec.is_some() && action.spec.enabled;
-        let body = if must_disable { disable_in_manifest(manifest) } else { manifest.to_owned() };
+        let body = if must_disable { disable_in_manifest(manifest)? } else { manifest.to_owned() };
 
         let dir = config::user_config_dir()?.join("actions");
         std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
@@ -271,22 +271,19 @@ impl Engine {
 
 /// Rewrite a manifest so it loads disabled, whether or not it already carried
 /// an `enabled` key.
-fn disable_in_manifest(manifest: &str) -> String {
-    let mut lines: Vec<String> = manifest.lines().map(str::to_owned).collect();
-    let mut rewritten = false;
-    for line in &mut lines {
-        if line.trim_start().starts_with("enabled") && line.contains('=') {
-            *line = "enabled = false".to_owned();
-            rewritten = true;
-        }
+///
+/// Edited as TOML rather than as lines: `enabled` is a top-level key, and a
+/// manifest that declares options ends in an `[options.*]` table, so a line
+/// appended at the end would land inside that table instead.
+fn disable_in_manifest(manifest: &str) -> Result<String> {
+    let mut doc: toml_edit::DocumentMut = manifest.parse().context("parsing the manifest")?;
+    let fresh = !doc.contains_key("enabled");
+    doc["enabled"] = toml_edit::value(false);
+    if fresh && let Some(mut key) = doc.as_table_mut().key_mut("enabled") {
+        key.leaf_decor_mut()
+            .set_prefix("# Installed from a selection; review it, then enable it.\n");
     }
-    if !rewritten {
-        lines.push("# Installed from a selection; review it, then enable it.".to_owned());
-        lines.push("enabled = false".to_owned());
-    }
-    let mut out = lines.join("\n");
-    out.push('\n');
-    out
+    Ok(doc.to_string())
 }
 
 fn spawn_worker(id: &str, work: impl FnOnce() + Send + 'static) {
@@ -330,7 +327,7 @@ mod tests {
     #[test]
     fn disabling_rewrites_an_existing_enabled_key() {
         let manifest = "id = \"x\"\ntitle = \"X\"\nexec = [\"true\"]\nenabled = true\n";
-        let out = disable_in_manifest(manifest);
+        let out = disable_in_manifest(manifest).expect("a manifest that parsed");
         assert!(out.contains("enabled = false"));
         assert!(!out.contains("enabled = true"));
     }
@@ -338,9 +335,22 @@ mod tests {
     #[test]
     fn disabling_appends_when_no_enabled_key_exists() {
         let manifest = "id = \"x\"\ntitle = \"X\"\nexec = [\"true\"]";
-        let out = disable_in_manifest(manifest);
+        let out = disable_in_manifest(manifest).expect("a manifest that parsed");
         assert!(out.ends_with("enabled = false\n"));
         // The result must still be a valid manifest.
         assert!(crate::config::parse_manifest(&out).is_ok());
+    }
+
+    /// A manifest that declares options ends in an `[options.*]` table, so a
+    /// line appended at the end lands inside that table rather than at the top
+    /// level.
+    #[test]
+    fn disabling_a_manifest_that_ends_in_a_table_still_disables_it() {
+        let manifest = "id = \"greet\"\ntitle = \"Greet\"\nexec = [\"echo\", \"{{option:word}}\"]\n\
+                        after = \"copy\"\n\n[options.word]\nlabel = \"Word\"\ndefault = \"hi\"\n";
+        let out = disable_in_manifest(manifest).expect("a manifest that parsed");
+        let action = crate::config::parse_manifest(&out).expect("still a loadable manifest");
+        assert!(!action.spec.enabled);
+        assert_eq!(action.spec.options["word"].default, "hi");
     }
 }
