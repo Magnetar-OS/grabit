@@ -82,14 +82,15 @@ pub fn settled(
 
     futures::stream::unfold(State { rx, cfg, settle, newest: 0 }, |mut state| async move {
         let first = state.rx.recv().await.ok()?;
-        let mut pending = accept(first, &mut state.newest).unwrap_or_default();
+        let mut pending = Grab::default();
+        fold(&mut pending, first, &mut state.newest);
 
         // Keep swallowing events until the stream goes quiet for `settle`.
         loop {
             match tokio::time::timeout(state.settle, state.rx.recv()).await {
                 Err(_timed_out) => break,
                 Ok(Err(_closed)) => return None,
-                Ok(Ok(raw)) => pending = accept(raw, &mut state.newest).unwrap_or_default(),
+                Ok(Ok(raw)) => fold(&mut pending, raw, &mut state.newest),
             }
         }
 
@@ -105,12 +106,24 @@ pub fn settled(
     })
 }
 
-/// Fold one raw event into the newest-generation bookkeeping.
+/// Fold one raw event into the selection waiting to settle.
 ///
-/// Returns the selection to adopt, or `None` for "cleared / stale".
+/// A clear empties it. A stale transfer — one older than a selection already
+/// seen — leaves it alone: it is dropped, not treated as a clear, or a slow
+/// read of an intermediate drag state would blank the final selection.
+fn fold(pending: &mut Grab, raw: Raw, newest: &mut u64) {
+    if let Some(adopted) = accept(raw, newest) {
+        *pending = adopted;
+    }
+}
+
+/// The newest-generation bookkeeping for one raw event.
+///
+/// `Some` is what to adopt — the selection, or the empty grab for a clear —
+/// and `None` a stale transfer to ignore.
 fn accept(raw: Raw, newest: &mut u64) -> Option<Grab> {
     match raw {
-        Raw::Cleared => None,
+        Raw::Cleared => Some(Grab::default()),
         Raw::Selection { generation, grab } => {
             if generation < *newest {
                 log::debug!("dropping stale selection (gen {generation})");
@@ -170,6 +183,25 @@ mod tests {
             for (generation, text) in [(1, "h"), (2, "he"), (3, "hello")] {
                 tx.send(Raw::Selection { generation, grab: Grab::text(text) }).await.unwrap();
             }
+            let mut stream = Box::pin(settled(rx, cfg(), Duration::from_millis(20)));
+            assert_eq!(stream.next().await, Some(Settled::Text(Grab::text("hello"))));
+        });
+    }
+
+    /// Transfers finish on worker threads, so an older one can land after a
+    /// newer one. It must be dropped, not allowed to blank the newer
+    /// selection that is still waiting to settle.
+    #[test]
+    fn a_late_stale_transfer_does_not_clear_the_pending_selection() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("building a test runtime");
+
+        runtime.block_on(async {
+            let (tx, rx) = async_channel::unbounded();
+            tx.send(Raw::Selection { generation: 2, grab: Grab::text("hello") }).await.unwrap();
+            tx.send(Raw::Selection { generation: 1, grab: Grab::text("he") }).await.unwrap();
             let mut stream = Box::pin(settled(rx, cfg(), Duration::from_millis(20)));
             assert_eq!(stream.next().await, Some(Settled::Text(Grab::text("hello"))));
         });
