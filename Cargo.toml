@@ -5,7 +5,6 @@ edition = "2024"
 rust-version = "1.99.0"
 description = "Selection-triggered actions for Wayland desktops"
 repository = "https://github.com/Magnetar-OS/grabit"
-homepage = "https://github.com/Magnetar-OS/grabit"
 license = "GPL-3.0-only"
 readme = "README.md"
 keywords = ["wayland", "selection", "clipboard", "cosmic", "layer-shell"]
