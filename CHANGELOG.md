@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-13
+
 ### Changed
 
 - Rebuilt against the current COSMIC libraries (libcosmic `a6ac45c`).
@@ -175,7 +177,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   file as an SPDX identifier.
 - `docs/cosmic-conventions.md`, recording the patterns the COSMIC projects share.
 
-[Unreleased]: https://github.com/Magnetar-OS/grabit/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/Magnetar-OS/grabit/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/Magnetar-OS/grabit/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Magnetar-OS/grabit/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Magnetar-OS/grabit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Magnetar-OS/grabit/compare/v1.0.4...v1.1.0
