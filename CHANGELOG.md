@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Built on the latest releases of its dependencies: htmd 0.5.6, log 0.4.35,
+  toml 1.1.8, toml_edit 0.25.17, wl-clipboard-rs 0.9.5 and rust-embed 8.13.
+
 ## [1.2.4] - 2026-11-01
 
 ### Changed
