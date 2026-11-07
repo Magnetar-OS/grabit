@@ -352,21 +352,35 @@ fn notify(summary: &str, body: &str) {
 
 fn try_notify(summary: &str, body: &str) -> Result<()> {
     use std::collections::HashMap;
-    use zbus::zvariant::Value;
+    use zbus::Variant;
 
-    let conn = zbus::blocking::Connection::session()?;
-    let proxy = zbus::blocking::Proxy::new(
-        &conn,
-        "org.freedesktop.Notifications",
-        "/org/freedesktop/Notifications",
-        "org.freedesktop.Notifications",
-    )?;
-    let hints: HashMap<&str, Value> = HashMap::new();
-    let _: u32 = proxy.call(
-        "Notify",
-        &("grabit", 0u32, "dialog-error-symbolic", summary, body, &[] as &[&str], hints, 5000i32),
-    )?;
-    Ok(())
+    zbus::block_on(async {
+        let conn = zbus::Connection::session().await?;
+        let proxy = zbus::Proxy::new(
+            &conn,
+            "org.freedesktop.Notifications",
+            "/org/freedesktop/Notifications",
+            "org.freedesktop.Notifications",
+        )
+        .await?;
+        let hints: HashMap<&str, Variant> = HashMap::new();
+        let _: u32 = proxy
+            .call(
+                "Notify",
+                &(
+                    "grabit",
+                    0u32,
+                    "dialog-error-symbolic",
+                    summary,
+                    body,
+                    &[] as &[&str],
+                    hints,
+                    5000i32,
+                ),
+            )
+            .await?;
+        Ok(())
+    })
 }
 
 #[cfg(test)]

@@ -69,37 +69,43 @@ impl Control {
 pub fn serve() -> Result<Option<async_channel::Receiver<Command>>> {
     let (tx, rx) = async_channel::bounded(16);
 
-    let connection = zbus::blocking::connection::Builder::session()
-        .context("connecting to the session bus")?
-        .serve_at(OBJECT_PATH, Control { tx })
-        .context("exporting the control interface")?
-        .build()
-        .context("starting the D-Bus service")?;
+    let claimed = zbus::block_on(async {
+        let connection = zbus::connection::Builder::session()
+            .serve_at(OBJECT_PATH, Control { tx })
+            .build()
+            .await
+            .context("starting the D-Bus service")?;
 
-    // Requested explicitly rather than through the builder so that a name which
-    // is already taken is an immediate error. The builder's default is to wait
-    // in the queue, which would silently leave a second daemon running with no
-    // way to reach it.
-    // zbus reports a taken name as `Error::NameTaken`, not as an `Exists`
-    // reply, so both are the "already running" outcome.
-    use zbus::fdo::RequestNameReply;
-    match connection
-        .request_name_with_flags(BUS_NAME, zbus::fdo::RequestNameFlags::DoNotQueue.into())
-    {
-        Ok(RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) => {}
-        Ok(_) | Err(zbus::Error::NameTaken) => return Ok(None),
-        Err(e) => return Err(e).with_context(|| format!("claiming {BUS_NAME}")),
-    }
+        // Requested explicitly rather than through the builder so that a name which
+        // is already taken is an immediate error. The builder's default is to wait
+        // in the queue, which would silently leave a second daemon running with no
+        // way to reach it.
+        // zbus reports a taken name as `Error::NameTaken`, not as an `Exists`
+        // reply, so both are the "already running" outcome.
+        use zbus::fdo::RequestNameReply;
+        match connection
+            .request_name_with_flags(BUS_NAME, zbus::fdo::RequestNameFlags::DO_NOT_QUEUE)
+            .await
+        {
+            Ok(RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) => {}
+            Ok(_) | Err(zbus::Error::NameTaken) => return Ok(None),
+            Err(e) => return Err(e).with_context(|| format!("claiming {BUS_NAME}")),
+        }
+        anyhow::Ok(Some(connection))
+    })?;
+    let Some(connection) = claimed else {
+        return Ok(None);
+    };
 
     // The connection has to outlive this function or the name is released
-    // immediately; a parked thread owns it for the lifetime of the process.
+    // immediately, and zbus only runs its tasks while a thread is inside
+    // `zbus::block_on`; a dedicated thread owns it and stays there for the
+    // lifetime of the process.
     std::thread::Builder::new()
         .name("grabit-dbus".into())
         .spawn(move || {
             let _connection = connection;
-            loop {
-                std::thread::park();
-            }
+            zbus::block_on(std::future::pending::<()>());
         })
         .context("spawning the D-Bus thread")?;
 
@@ -108,14 +114,18 @@ pub fn serve() -> Result<Option<async_channel::Receiver<Command>>> {
 
 /// Call a method on an already-running daemon.
 pub fn call(method: &str) -> Result<()> {
-    let connection =
-        zbus::blocking::Connection::session().context("connecting to the session bus")?;
-    let proxy = zbus::blocking::Proxy::new(&connection, BUS_NAME, OBJECT_PATH, INTERFACE)
-        .context("creating the control proxy")?;
-    proxy
-        .call::<_, _, ()>(method, &())
-        .with_context(|| format!("calling {method} (is grabit running?)"))?;
-    Ok(())
+    zbus::block_on(async {
+        let connection =
+            zbus::Connection::session().await.context("connecting to the session bus")?;
+        let proxy = zbus::Proxy::new(&connection, BUS_NAME, OBJECT_PATH, INTERFACE)
+            .await
+            .context("creating the control proxy")?;
+        proxy
+            .call::<_, _, ()>(method, &())
+            .await
+            .with_context(|| format!("calling {method} (is grabit running?)"))?;
+        Ok(())
+    })
 }
 
 /// Read the current primary selection as text.

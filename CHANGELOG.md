@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Built on zbus 6, as libcosmic now is, and on toml 1.2.1 and toml_edit
+  0.25.19. The GNOME integration makes its D-Bus calls on its own runtime
+  instead of blocking inside it.
+
 ## [1.2.5] - 2026-11-01
 
 ### Changed

@@ -262,23 +262,26 @@ fn open_uri(uri: &str) -> Result<()> {
 
 fn open_uri_portal(uri: &str) -> Result<()> {
     use std::collections::HashMap;
-    use zbus::zvariant::Value;
+    use zbus::Variant;
 
-    let conn = zbus::blocking::Connection::session().context("connecting to the session bus")?;
-    let proxy = zbus::blocking::Proxy::new(
-        &conn,
-        "org.freedesktop.portal.Desktop",
-        "/org/freedesktop/portal/desktop",
-        "org.freedesktop.portal.OpenURI",
-    )
-    .context("creating OpenURI proxy")?;
+    zbus::block_on(async {
+        let conn = zbus::Connection::session().await.context("connecting to the session bus")?;
+        let proxy = zbus::Proxy::new(
+            &conn,
+            "org.freedesktop.portal.Desktop",
+            "/org/freedesktop/portal/desktop",
+            "org.freedesktop.portal.OpenURI",
+        )
+        .await
+        .context("creating OpenURI proxy")?;
 
-    // An empty parent window handle is valid and means "no parent"; grabit has
-    // no toplevel to parent a chooser dialog to.
-    let options: HashMap<&str, Value> = HashMap::new();
-    let _: zbus::zvariant::OwnedObjectPath =
-        proxy.call("OpenURI", &("", uri, options)).context("calling OpenURI")?;
-    Ok(())
+        // An empty parent window handle is valid and means "no parent"; grabit has
+        // no toplevel to parent a chooser dialog to.
+        let options: HashMap<&str, Variant> = HashMap::new();
+        let _: zbus::OwnedObjectPath =
+            proxy.call("OpenURI", &("", uri, options)).await.context("calling OpenURI")?;
+        Ok(())
+    })
 }
 
 #[cfg(test)]
