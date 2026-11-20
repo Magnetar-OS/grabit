@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Built on zbus 6.5.
+
 ## [1.2.7] - 2026-11-20
 
 ### Changed
