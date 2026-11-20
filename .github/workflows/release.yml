@@ -76,6 +76,11 @@ jobs:
       product_name: 'grabit'
       repo_name: 'magnetar'
       pages_repo: 'Magnetar-OS/arch-repo'
+      # No superseded version stays in [magnetar]: with one kept for every
+      # package on both architectures the site passed the 950 MiB the kit
+      # allows under GitHub Pages' 1 GB limit (2026-11-21). An older version
+      # stays downloadable from its GitHub release.
+      keep: '0'
     # Passed explicitly, NOT `secrets: inherit`: the kit lives in the
     # entro314-labs organisation and this repository in Magnetar-OS, and
     # `inherit` does not carry secrets across organisations — ARCH_REPO_TOKEN
