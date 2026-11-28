@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Rebuilt against the current COSMIC libraries (libcosmic `009fb9d`).
 - Built with Rust 1.100.1, now the minimum supported version (was 1.100.0).
 - Built on htmd 0.6.1, toml 1.2.3 and toml_edit 0.25.21.
 
