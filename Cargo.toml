@@ -2,7 +2,7 @@
 name = "grabit"
 version = "1.2.8"
 edition = "2024"
-rust-version = "1.100.0"
+rust-version = "1.100.1"
 description = "Selection-triggered actions for Wayland desktops"
 repository = "https://github.com/Magnetar-OS/grabit"
 license = "GPL-3.0-only"
@@ -25,19 +25,19 @@ libcosmic = { git = "https://github.com/pop-os/libcosmic.git", features = [
 ] }
 tokio = { version = "1", features = ["net", "time", "rt"] }
 futures = "0.3"
-anyhow = "1.0.104"
+anyhow = "1.0.105"
 async-channel = "2.5.0"
-clap = { version = "4.6.9", features = ["derive"] }
+clap = { version = "4.6.10", features = ["derive"] }
 dirs = "7.0.0"
 env_logger = "0.11.12"
-htmd = "0.6.0"
+htmd = "0.6.1"
 log = "0.4.35"
 memfd = "0.6.6"
 regex = "1.13.2"
 serde = { version = "1.0.229", features = ["derive"] }
 shell-words = "1.1.1"
-toml = "1.2.1"
-toml_edit = "0.25.19"
+toml = "1.2.3"
+toml_edit = "0.25.21"
 wayland-client = "0.31.15"
 wayland-protocols = { version = "0.32.13", features = ["client", "staging"] }
 wayland-protocols-misc = { version = "0.3.12", features = ["client"] }
