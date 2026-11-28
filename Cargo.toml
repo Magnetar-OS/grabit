@@ -1,6 +1,6 @@
 [package]
 name = "grabit"
-version = "1.2.8"
+version = "1.2.9"
 edition = "2024"
 rust-version = "1.100.1"
 description = "Selection-triggered actions for Wayland desktops"
